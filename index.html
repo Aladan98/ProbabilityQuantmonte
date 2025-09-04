@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Professional Monte Carlo Trading Analysis</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 30px;
+            padding: 30px;
+        }
+        
+        .controls {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .control-group input[type="file"],
+        .control-group input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .control-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .range-group {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .range-group input[type="range"] {
+            flex: 1;
+            height: 6px;
+            background: #dee2e6;
+            border-radius: 3px;
+            outline: none;
+        }
+        
+        .range-value {
+            font-weight: 600;
+            color: #667eea;
+            min-width: 80px;
+            text-align: center;
+            background: #f0f3ff;
+            padding: 5px 10px;
+            border-radius: 5px;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .results {
+            display: grid;
+            gap: 20px;
+        }
+        
+        .result-card {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+        
+        .result-card h3 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .metric {
+            text-align: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .metric-label {
+            font-size: 0.9rem;
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .metric-value {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+        
+        .metric-value.positive { color: #28a745; }
+        .metric-value.negative { color: #dc3545; }
+        
+        .risk-metrics {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+        
+        .risk-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background: #fff5f5;
+            border-radius: 8px;
+            border-left: 4px solid #dc3545;
+        }
+        
+        .probability-bars {
+            margin-top: 20px;
+        }
+        
+        .prob-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .prob-label {
+            width: 120px;
+            font-weight: 600;
+        }
+        
+        .prob-bar {
+            flex: 1;
+            height: 25px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin: 0 10px;
+        }
+        
+        .prob-fill {
+            height: 100%;
+            border-radius: 12px;
+            transition: width 0.8s ease;
+        }
+        
+        .prob-fill.gain { background: linear-gradient(90deg, #28a745, #20c997); }
+        .prob-fill.loss { background: linear-gradient(90deg, #dc3545, #fd7e14); }
+        
+        .prob-value {
+            font-weight: 600;
+            min-width: 60px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid;
+        }
+        
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border-color: #dc3545;
+        }
+        
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border-color: #17a2b8;
+        }
+        
+        .chart-container {
+            height: 500px;
+            margin-top: 20px;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+        
+        .loading.show { display: block; }
+        
+        .data-summary {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-left: 4px solid #28a745;
+        }
+        
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1>Professional Monte Carlo Trading Analysis</h1>
+        <p>Advanced quantitative analysis with comprehensive risk metrics</p>
+    </div>
+
+    <div class="main-content">
+        <div class="controls">
+            <div class="control-group">
+                <label for="fileInput">📊 Upload Price Data (CSV)</label>
+                <input type="file" id="fileInput" accept=".csv">
+                <small style="color: #6c757d; margin-top: 5px; display: block;">
+                    CSV must contain 'Close' or 'Price' column
+                </small>
+            </div>
+
+            <div class="control-group">
+                <label for="simulations">🎲 Monte Carlo Simulations</label>
+                <div class="range-group">
+                    <input type="range" id="simulations" min="1000" max="50000" step="1000" value="10000">
+                    <div class="range-value" id="simulationsValue">10,000</div>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label for="horizon">📅 Forecast Horizon (Days)</label>
+                <input type="number" id="horizon" min="1" max="252" value="5">
+            </div>
+
+            <div class="control-group">
+                <label for="riskFreeRate">💰 Risk-Free Rate (%)</label>
+                <input type="number" id="riskFreeRate" min="0" max="20" step="0.1" value="3.0">
+            </div>
+
+            <button class="btn" onclick="runForecast()" id="runBtn">
+                🚀 Run Monte Carlo Analysis
+            </button>
+
+            <div id="dataSummary"></div>
+        </div>
+
+        <div class="results">
+            <div id="alerts"></div>
+            <div class="loading" id="loading">
+                <div>🔄 Running simulation...</div>
+                <div style="font-size: 0.9rem; margin-top: 10px;">Processing market data and generating forecasts</div>
+            </div>
+            <div id="output"></div>
+            <div id="charts"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Global variables
+let priceData = [];
+let simulationResults = null;
+
+// Update range display
+document.getElementById('simulations').oninput = function() {
+    document.getElementById('simulationsValue').textContent = 
+        parseInt(this.value).toLocaleString();
+};
+
+// Box-Muller transformation for proper normal distribution
+function boxMuller() {
+    const u = 0.99999 * Math.random() + 0.00001;
+    const v = 0.99999 * Math.random() + 0.00001;
+    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+}
+
+// Enhanced CSV parsing
+function parseCSV(text) {
+    const lines = text.trim().split('\n');
+    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
+    
+    const dateIndex = headers.findIndex(h => h.includes('date') || h.includes('time'));
+    const closeIndex = headers.findIndex(h => h.includes('close') || h.includes('price'));
+    
+    if (closeIndex === -1) {
+        throw new Error('CSV must contain a "Close" or "Price" column');
+    }
+
+    const data = [];
+    for (let i = 1; i < lines.length; i++) {
+        const parts = lines[i].split(',');
+        const close = parseFloat(parts[closeIndex]);
+        
+        if (!isNaN(close) && close > 0) {
+            data.push({
+                date: dateIndex >= 0 ? parts[dateIndex] : `Day ${i}`,
+                close: close
+            });
+        }
+    }
+    
+    return data;
+}
+
+// Statistical functions
+function mean(arr) {
+    return arr.reduce((sum, val) => sum + val, 0) / arr.length;
+}
+
+function std(arr) {
+    const mu = mean(arr);
+    const variance = arr.reduce((sum, val) => sum + Math.pow(val - mu, 2), 0) / arr.length;
+    return Math.sqrt(variance);
+}
+
+function percentile(arr, p) {
+    const sorted = [...arr].sort((a, b) => a - b);
+    const index = (p / 100) * (sorted.length - 1);
+    const lower = Math.floor(index);
+    const upper = Math.ceil(index);
+    const weight = index - lower;
+    
+    if (upper >= sorted.length) return sorted[sorted.length - 1];
+    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+}
+
+// Log returns calculation
+function computeReturns(prices) {
+    const returns = [];
+    for (let i = 1; i < prices.length; i++) {
+        returns.push(Math.log(prices[i] / prices[i - 1]));
+    }
+    return returns;
+}
+
+// Enhanced Monte Carlo simulation with proper GBM
+function monteCarlo(S0, returns, horizon, sims, riskFreeRate) {
+    const mu = mean(returns);
+    const sigma = std(returns);
+    const dt = 1; // Daily time step
+    
+    const finalPrices = [];
+    const samplePaths = [];
+    
+    // Generate simulation paths
+    for (let sim = 0; sim < sims; sim++) {
+        let price = S0;
+        const path = [price];
+        
+        for (let t = 0; t < horizon; t++) {
+            const z = boxMuller();
+            const drift = (mu - 0.5 * sigma * sigma) * dt;
+            const diffusion = sigma * Math.sqrt(dt) * z;
+            
+            price = price * Math.exp(drift + diffusion);
+            path.push(price);
+        }
+        
+        finalPrices.push(price);
+        if (sim < 20) samplePaths.push(path); // Store sample paths for visualization
+    }
+    
+    // Calculate comprehensive statistics
+    const meanPrice = mean(finalPrices);
+    const medianPrice = percentile(finalPrices, 50);
+    const stdPrice = std(finalPrices);
+    
+    // Risk metrics
+    const var95 = percentile(finalPrices, 5);
+    const var99 = percentile(finalPrices, 1);
+    
+    // Conditional VaR (Expected Shortfall)
+    const sortedPrices = [...finalPrices].sort((a, b) => a - b);
+    const var95Index = Math.floor(0.05 * sortedPrices.length);
+    const var99Index = Math.floor(0.01 * sortedPrices.length);
+    
+    const cvar95 = mean(sortedPrices.slice(0, var95Index));
+    const cvar99 = mean(sortedPrices.slice(0, var99Index));
+    
+    // Performance metrics
+    const expectedReturn = ((meanPrice - S0) / S0) * 100;
+    const annualizedReturn = expectedReturn * (252 / horizon);
+    const annualizedVol = std(returns) * Math.sqrt(252) * 100;
+    const sharpeRatio = (annualizedReturn - riskFreeRate) / annualizedVol;
+    
+    // Probabilities
+    const gainCount = finalPrices.filter(p => p > S0).length;
+    const lossCount = finalPrices.filter(p => p < S0).length;
+    
+    return {
+        finalPrices,
+        samplePaths,
+        statistics: {
+            mean: meanPrice,
+            median: medianPrice,
+            std: stdPrice,
+            var95, var99, cvar95, cvar99,
+            expectedReturn,
+            sharpeRatio,
+            annualizedReturn,
+            annualizedVol
+        },
+        quantiles: {
+            p5: percentile(finalPrices, 5),
+            p25: percentile(finalPrices, 25),
+            p50: percentile(finalPrices, 50),
+            p75: percentile(finalPrices, 75),
+            p95: percentile(finalPrices, 95)
+        },
+        probabilities: {
+            gain: (gainCount / sims) * 100,
+            loss: (lossCount / sims) * 100
+        }
+    };
+}
+
+// Display functions
+function showAlert(message, type = 'error') {
+    const alertsDiv = document.getElementById('alerts');
+    alertsDiv.innerHTML = `
+        <div class="alert alert-${type}">
+            ${message}
+        </div>
+    `;
+}
+
+function clearAlerts() {
+    document.getElementById('alerts').innerHTML = '';
+}
+
+function updateDataSummary(data) {
+    const summaryDiv = document.getElementById('dataSummary');
+    const currentPrice = data[data.length - 1].close;
+    
+    summaryDiv.innerHTML = `
+        <div class="data-summary">
+            <strong>📈 Data Loaded Successfully</strong><br>
+            • ${data.length} price points<br>
+            • Current price: $${currentPrice.toFixed(2)}<br>
+            • Ready for analysis
+        </div>
+    `;
+}
+
+function formatCurrency(value) {
+    return `$${value.toFixed(2)}`;
+}
+
+function formatPercent(value) {
+    return `${value.toFixed(2)}%`;
+}
+
+function displayResults(results, initialPrice) {
+    const stats = results.statistics;
+    const isPositive = stats.expectedReturn >= 0;
+    
+    document.getElementById('output').innerHTML = `
+        <div class="result-card">
+            <h3>📊 Price Forecast & Performance</h3>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-label">Current Price</div>
+                    <div class="metric-value">${formatCurrency(initialPrice)}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Expected Price</div>
+                    <div class="metric-value ${isPositive ? 'positive' : 'negative'}">
+                        ${formatCurrency(stats.mean)}
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Expected Return</div>
+                    <div class="metric-value ${isPositive ? 'positive' : 'negative'}">
+                        ${isPositive ? '+' : ''}${formatPercent(stats.expectedReturn)}
+                    </div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">Sharpe Ratio</div>
+                    <div class="metric-value ${stats.sharpeRatio > 1 ? 'positive' : ''}">
+                        ${stats.sharpeRatio.toFixed(3)}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-card">
+            <h3>⚠️ Risk Analysis</h3>
+            <div class="risk-metrics">
+                <div class="risk-item">
+                    <span>Value at Risk (95%)</span>
+                    <strong>${formatCurrency(stats.var95)}</strong>
+                </div>
+                <div class="risk-item">
+                    <span>Value at Risk (99%)</span>
+                    <strong>${formatCurrency(stats.var99)}</strong>
+                </div>
+                <div class="risk-item">
+                    <span>Conditional VaR (95%)</span>
+                    <strong>${formatCurrency(stats.cvar95)}</strong>
+                </div>
+                <div class="risk-item">
+                    <span>Conditional VaR (99%)</span>
+                    <strong>${formatCurrency(stats.cvar99)}</strong>
+                </div>
+            </div>
+            <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <strong>Risk Interpretation:</strong><br>
+                • VaR (95%): 95% confident losses won't exceed ${formatCurrency(initialPrice - stats.var95)}<br>
+                • CVaR (95%): Average loss in worst 5% of scenarios is ${formatCurrency(initialPrice - stats.cvar95)}
+            </div>
+        </div>
+
+        <div class="result-card">
+            <h3>📈 Outcome Probabilities</h3>
+            <div class="probability-bars">
+                <div class="prob-item">
+                    <div class="prob-label">Probability of Gain:</div>
+                    <div class="prob-bar">
+                        <div class="prob-fill gain" style="width: ${results.probabilities.gain}%"></div>
+                    </div>
+                    <div class="prob-value">${formatPercent(results.probabilities.gain)}</div>
+                </div>
+                <div class="prob-item">
+                    <div class="prob-label">Probability of Loss:</div>
+                    <div class="prob-bar">
+                        <div class="prob-fill loss" style="width: ${results.probabilities.loss}%"></div>
+                    </div>
+                    <div class="prob-value">${formatPercent(results.probabilities.loss)}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="result-card">
+            <h3>📋 Price Quantiles</h3>
+            <div class="metrics-grid">
+                <div class="metric">
+                    <div class="metric-label">5th Percentile</div>
+                    <div class="metric-value">${formatCurrency(results.quantiles.p5)}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">25th Percentile</div>
+                    <div class="metric-value">${formatCurrency(results.quantiles.p25)}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">75th Percentile</div>
+                    <div class="metric-value">${formatCurrency(results.quantiles.p75)}</div>
+                </div>
+                <div class="metric">
+                    <div class="metric-label">95th Percentile</div>
+                    <div class="metric-value">${formatCurrency(results.quantiles.p95)}</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function plotResults(results, initialPrice) {
+    const chartsDiv = document.getElementById('charts');
+    chartsDiv.innerHTML = `
+        <div class="result-card">
+            <h3>📊 Simulation Visualization</h3>
+            <div class="chart-container" id="distributionChart"></div>
+        </div>
+        <div class="result-card">
+            <h3>📈 Sample Price Paths</h3>
+            <div class="chart-container" id="pathsChart"></div>
+        </div>
+    `;
+
+    // Price distribution histogram
+    const trace1 = {
+        x: results.finalPrices,
+        type: 'histogram',
+        name: 'Price Distribution',
+        nbinsx: 50,
+        marker: {
+            color: 'rgba(102, 126, 234, 0.7)',
+            line: { color: 'rgba(102, 126, 234, 1)', width: 1 }
+        }
+    };
+
+    const layout1 = {
+        title: 'Monte Carlo Price Distribution',
+        xaxis: { title: 'Final Price ($)' },
+        yaxis: { title: 'Frequency' },
+        shapes: [
+            {
+                type: 'line',
+                x0: initialPrice, x1: initialPrice,
+                y0: 0, y1: 1, yref: 'paper',
+                line: { color: 'red', width: 2, dash: 'dash' }
+            },
+            {
+                type: 'line',
+                x0: results.statistics.mean, x1: results.statistics.mean,
+                y0: 0, y1: 1, yref: 'paper',
+                line: { color: 'green', width: 2 }
+            },
+            {
+                type: 'line',
+                x0: results.statistics.var95, x1: results.statistics.var95,
+                y0: 0, y1: 1, yref: 'paper',
+                line: { color: 'orange', width: 2, dash: 'dot' }
+            }
+        ],
+        annotations: [
+            {
+                x: initialPrice, y: 0.9, yref: 'paper',
+                text: 'Current Price', showarrow: true,
+                arrowcolor: 'red', arrowsize: 1
+            },
+            {
+                x: results.statistics.mean, y: 0.8, yref: 'paper',
+                text: 'Expected Price', showarrow: true,
+                arrowcolor: 'green', arrowsize: 1
+            }
+        ]
+    };
+
+    Plotly.newPlot('distributionChart', [trace1], layout1);
+
+    // Sample paths
+    const pathTraces = results.samplePaths.map((path, index) => ({
+        x: Array.from({length: path.length}, (_, i) => i),
+        y: path,
+        type: 'scatter',
+        mode: 'lines',
+        name: `Path ${index + 1}`,
+        line: { width: 2 },
+        opacity: 0.7
+    }));
+
+    const layout2 = {
+        title: 'Sample Monte Carlo Price Paths',
+        xaxis: { title: 'Days' },
+        yaxis: { title: 'Price ($)' },
+        showlegend: false,
+        shapes: [{
+            type: 'line',
+            x0: 0, x1: pathTraces[0].x[pathTraces[0].x.length - 1],
+            y0: initialPrice, y1: initialPrice,
+            line: { color: 'red', width: 2, dash: 'dash' }
+        }]
+    };
+
+    Plotly.newPlot('pathsChart', pathTraces, layout2);
+}
+
+// Main forecast function
+async function runForecast() {
+    const fileInput = document.getElementById('fileInput');
+    
+    if (!fileInput.files[0]) {
+        showAlert('Please upload a CSV file first.');
+        return;
+    }
+
+    if (priceData.length < 30) {
+        showAlert('Please ensure your data has at least 30 price points for reliable analysis.');
+        return;
+    }
+
+    // Show loading
+    document.getElementById('loading').classList.add('show');
+    document.getElementById('runBtn').disabled = true;
+    clearAlerts();
+
+    try {
+        // Get parameters
+        const sims = parseInt(document.getElementById('simulations').value);
+        const horizon = parseInt(document.getElementById('horizon').value);
+        const riskFreeRate = parseFloat(document.getElementById('riskFreeRate').value);
+
+        // Simulate processing delay for better UX
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const prices = priceData.map(d => d.close);
+        const returns = computeReturns(prices);
+        const currentPrice = prices[prices.length - 1];
+
+        // Run Monte Carlo simulation
+        simulationResults = monteCarlo(currentPrice, returns, horizon, sims, riskFreeRate);
+
+        // Display results
+        displayResults(simulationResults, currentPrice);
+        plotResults(simulationResults, currentPrice);
+
+    } catch (error) {
+        showAlert(`Simulation failed: ${error.message}`);
+    } finally {
+        document.getElementById('loading').classList.remove('show');
+        document.getElementById('runBtn').disabled = false;
+    }
+}
+
+// File upload handler
+document.getElementById('fileInput').onchange = function(event) {
+    const file = event.target.files[0];
+    
+    if (!file) return;
+    
+    if (!file.name.toLowerCase().endsWith('.csv')) {
+        showAlert('Please upload a CSV file.');
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        try {
+            const text = e.target.result;
+            priceData = parseCSV(text);
+            
+            if (priceData.length < 10) {
+                throw new Error('Dataset too small. Please provide at least 10 data points.');
+            }
+
+            updateDataSummary(priceData);
+            clearAlerts();
+            
+        } catch (error) {
+            showAlert(`Error parsing CSV: ${error.message}`);
+            priceData = [];
+        }
+    };
+    
+    reader.readAsText(file);
+};
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    showAlert('Welcome! Upload your CSV price data to begin professional Monte Carlo analysis.', 'info');
+});
+</script>
+
+</body>
+</html>
