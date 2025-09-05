@@ -1,879 +1,179 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monte Carlo Trading Tool</title>
-    <meta name="description" content="Simplified Monte Carlo price forecasting tool for professional traders">
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            color: #f8fafc;
-            min-height: 100vh;
-            padding: 20px;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-
-        .header {
-            text-align: center;
-            background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            border-radius: 12px;
-            padding: 32px;
-            margin-bottom: 24px;
-            backdrop-filter: blur(10px);
-        }
-
-        .header h1 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, #22c55e, #3b82f6);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 8px;
-        }
-
-        .header p {
-            color: #94a3b8;
-            font-size: 1.1rem;
-        }
-
-        .card {
-            background: linear-gradient(135deg, #1e293b, #334155);
-            border: 1px solid #475569;
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
-        }
-
-        .card-header {
-            margin-bottom: 20px;
-        }
-
-        .card-title {
-            font-size: 1.25rem;
-            font-weight: 600;
-            color: #f8fafc;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .form-group {
-            margin-bottom: 16px;
-        }
-
-        .form-label {
-            display: block;
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: #e2e8f0;
-            margin-bottom: 6px;
-        }
-
-        .form-input, .form-select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #475569;
-            border-radius: 8px;
-            background: rgba(51, 65, 85, 0.5);
-            color: #f8fafc;
-            font-size: 14px;
-            transition: all 0.2s;
-        }
-
-        .form-input:focus, .form-select:focus {
-            outline: none;
-            border-color: #22c55e;
-            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.1);
-        }
-
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 16px;
-        }
-
-        .btn {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            justify-content: center;
-        }
-
-        .btn-primary {
-            background: linear-gradient(135deg, #22c55e, #16a34a);
-            color: white;
-            padding: 16px 32px;
-            font-size: 16px;
-        }
-
-        .btn-primary:hover:not(:disabled) {
-            background: linear-gradient(135deg, #16a34a, #15803d);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
-        }
-
-        .btn-primary:disabled {
-            background: #6b7280;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .btn-secondary {
-            background: transparent;
-            border: 1px solid #475569;
-            color: #e2e8f0;
-        }
-
-        .btn-secondary:hover {
-            background: rgba(51, 65, 85, 0.5);
-        }
-
-        .progress-container {
-            margin: 16px 0;
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 8px;
-            background: #334155;
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #22c55e, #16a34a);
-            transition: width 0.3s ease;
-            border-radius: 4px;
-        }
-
-        .progress-text {
-            display: flex;
-            justify-content: between;
-            font-size: 0.875rem;
-            color: #94a3b8;
-            margin-bottom: 8px;
-        }
-
-        .result-card {
-            background: linear-gradient(135deg, #0f172a, #1e293b);
-            border: 1px solid #334155;
-            border-radius: 12px;
-            padding: 32px;
-            text-align: center;
-            margin-bottom: 24px;
-            animation: fadeIn 0.5s ease-out;
-        }
-
-        .price-display {
-            background: rgba(34, 197, 94, 0.1);
-            border: 1px solid rgba(34, 197, 94, 0.2);
-            border-radius: 12px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
-
-        .price-value {
-            font-size: 3rem;
-            font-weight: 700;
-            color: #22c55e;
-            margin-bottom: 8px;
-        }
-
-        .price-change {
-            display: inline-flex;
-            align-items: center;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-weight: 600;
-            font-size: 1.1rem;
-        }
-
-        .price-change.positive {
-            background: rgba(34, 197, 94, 0.2);
-            color: #22c55e;
-            border: 1px solid rgba(34, 197, 94, 0.3);
-        }
-
-        .price-change.negative {
-            background: rgba(239, 68, 68, 0.2);
-            color: #ef4444;
-            border: 1px solid rgba(239, 68, 68, 0.3);
-        }
-
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 16px;
-            margin-top: 24px;
-        }
-
-        .metric-item {
-            background: rgba(51, 65, 85, 0.3);
-            padding: 16px;
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .metric-label {
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
-            color: #94a3b8;
-            margin-bottom: 4px;
-        }
-
-        .metric-value {
-            font-size: 1.25rem;
-            font-weight: 700;
-            font-family: 'Monaco', 'Menlo', monospace;
-        }
-
-        .alert {
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            border-radius: 8px;
-            padding: 16px;
-            margin: 16px 0;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .alert-icon {
-            color: #3b82f6;
-            flex-shrink: 0;
-            margin-top: 2px;
-        }
-
-        .collapsible {
-            margin-top: 16px;
-        }
-
-        .collapsible-trigger {
-            width: 100%;
-            background: rgba(51, 65, 85, 0.3);
-            border: 1px solid #475569;
-            border-radius: 8px;
-            padding: 16px;
-            color: #e2e8f0;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.2s;
-        }
-
-        .collapsible-trigger:hover {
-            background: rgba(51, 65, 85, 0.5);
-        }
-
-        .collapsible-content {
-            display: none;
-            margin-top: 8px;
-        }
-
-        .collapsible-content.open {
-            display: block;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        .advanced-metrics {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-            gap: 16px;
-            padding: 24px;
-        }
-
-        .advanced-metric {
-            text-align: center;
-            padding: 16px;
-            background: rgba(51, 65, 85, 0.2);
-            border-radius: 8px;
-        }
-
-        .spinner {
-            border: 3px solid rgba(51, 65, 85, 0.3);
-            border-top: 3px solid #22c55e;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            animation: spin 1s linear infinite;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .file-upload-area {
-            border: 2px dashed #475569;
-            border-radius: 8px;
-            padding: 24px;
-            text-align: center;
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-
-        .file-upload-area:hover {
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.05);
-        }
-
-        .file-upload-area.has-file {
-            border-color: #22c55e;
-            background: rgba(34, 197, 94, 0.1);
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes slideDown {
-            from { opacity: 0; height: 0; }
-            to { opacity: 1; height: auto; }
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .price-value {
-                font-size: 2rem;
-            }
-            
-            .grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Weighted OHLC Monte Carlo Forecast - Multi-Horizon</title>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <div class="header">
-            <h1>🚀 Monte Carlo Price Forecast</h1>
-            <p>Professional trading tool with simplified workflow</p>
-        </div>
+<h2>Weighted OHLC Monte Carlo Forecast - Multi-Horizon</h2>
+<input type="file" id="fileInput" accept=".csv">
+<button id="runButton">Run Forecast</button>
+<pre id="output"></pre>
 
-        <!-- Configuration Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title">
-                    <span>📊</span>
-                    Configuration
-                </h2>
-            </div>
+<script>
+let csvData = null;
 
-            <!-- File Upload -->
-            <div class="form-group">
-                <label class="form-label">Upload CSV File</label>
-                <div class="file-upload-area" id="fileUploadArea">
-                    <div>
-                        <span style="font-size: 2rem; display: block; margin-bottom: 8px;">📁</span>
-                        <span id="fileUploadText">Click to upload CSV file</span>
-                        <br>
-                        <small style="color: #94a3b8; margin-top: 8px; display: block;">
-                            CSV should have a "Close" or "Price" column
-                        </small>
-                    </div>
-                    <input type="file" id="fileInput" accept=".csv" style="display: none;">
-                </div>
-            </div>
+// Parse CSV
+function parseCSV(text) {
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",").map(h => h.trim().toLowerCase());
+    const oIndex = headers.indexOf("open");
+    const hIndex = headers.indexOf("high");
+    const lIndex = headers.indexOf("low");
+    const cIndex = headers.indexOf("close");
+    if([oIndex,hIndex,lIndex,cIndex].some(i => i===-1)){
+        alert("CSV must contain Open, High, Low, Close columns");
+        return null;
+    }
+    return lines.slice(1).map(line=>{
+        const parts=line.split(",").map(parseFloat);
+        return {o:parts[oIndex], h:parts[hIndex], l:parts[lIndex], c:parts[cIndex]};
+    });
+}
 
-            <!-- Essential Parameters -->
-            <div class="grid">
-                <div class="form-group">
-                    <label for="horizon" class="form-label">Horizon (days)</label>
-                    <input type="number" id="horizon" class="form-input" value="5" min="1" max="252">
-                </div>
-                
-                <div class="form-group">
-                    <label for="simulations" class="form-label">Simulations</label>
-                    <select id="simulations" class="form-select">
-                        <option value="25000">25K (Fast)</option>
-                        <option value="50000" selected>50K (Balanced)</option>
-                        <option value="100000">100K (Precise)</option>
-                    </select>
-                </div>
-                
-                <div class="form-group">
-                    <label for="model" class="form-label">Model (Optional)</label>
-                    <select id="model" class="form-select">
-                        <option value="gbm" selected>Geometric Brownian Motion</option>
-                        <option value="heston">Stochastic Volatility</option>
-                        <option value="jump">Jump Diffusion</option>
-                    </select>
-                </div>
-            </div>
+// Gaussian random
+function gaussianRandom(){
+    let u=0,v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return Math.sqrt(-2.0*Math.log(u))*Math.cos(2.0*Math.PI*v);
+}
 
-            <!-- Run Button -->
-            <div style="text-align: center; margin-top: 24px;">
-                <button id="runButton" class="btn btn-primary">
-                    <span>📈</span>
-                    Run Monte Carlo
-                </button>
-            </div>
+// Daily log returns
+function calcReturns(data){
+    const returns=[];
+    for(let i=1;i<data.length;i++){
+        returns.push(Math.log(data[i].c/data[i-1].c));
+    }
+    return returns;
+}
 
-            <!-- Progress Bar -->
-            <div id="progressContainer" class="progress-container hidden">
-                <div class="progress-text">
-                    <span>Progress</span>
-                    <span id="progressText">0%</span>
-                </div>
-                <div class="progress-bar">
-                    <div id="progressFill" class="progress-fill" style="width: 0%"></div>
-                </div>
-            </div>
-        </div>
+// Stats
+function stats(returns){
+    const mean=returns.reduce((a,b)=>a+b,0)/returns.length;
+    const variance=returns.reduce((a,b)=>a+(b-mean)**2,0)/returns.length;
+    return {mu:mean*252, sigma:Math.sqrt(variance*252)};
+}
 
-        <!-- Results -->
-        <div id="resultsContainer" class="hidden">
-            <!-- Main Result -->
-            <div class="result-card">
-                <h2 style="margin-bottom: 24px; font-size: 1.75rem;">🎯 Monte Carlo Price Point</h2>
-                
-                <div class="price-display">
-                    <div id="expectedPrice" class="price-value">$0.00</div>
-                    <div id="expectedReturn" class="price-change">0.00%</div>
-                </div>
+// Simulate daily path
+function simulatePath(S0, mu, sigma, horizon){
+    const dt=1/252;
+    const prices=[S0];
+    for(let i=0;i<horizon;i++){
+        const Z=gaussianRandom();
+        const next=prices[prices.length-1]*Math.exp((mu-0.5*sigma*sigma)*dt + sigma*Z*Math.sqrt(dt));
+        prices.push(next);
+    }
+    return prices;
+}
 
-                <div class="metrics-grid">
-                    <div class="metric-item">
-                        <div class="metric-label">95% Confidence Interval</div>
-                        <div id="confidenceInterval" class="metric-value">$0.00 - $0.00</div>
-                    </div>
-                    
-                    <div class="metric-item">
-                        <div class="metric-label">Current Price</div>
-                        <div id="currentPrice" class="metric-value">$0.00</div>
-                    </div>
-                </div>
+// Weighted expected value
+function weightedExpected(arr){
+    const precision=0.01; 
+    const freqMap=new Map();
+    arr.forEach(p=>{
+        const key=Math.round(p/precision)*precision;
+        freqMap.set(key,(freqMap.get(key)||0)+1);
+    });
+    const total=arr.length;
+    let sum=0;
+    freqMap.forEach((count, price)=>{
+        const prob=count/total;
+        sum+=price*prob;
+    });
+    return sum;
+}
 
-                <div class="alert">
-                    <div class="alert-icon">ℹ️</div>
-                    <div>
-                        <div id="simulationInfo">
-                            Based on 50,000 simulations over 5 days. 
-                            Use this price point for position entry and the confidence interval for risk management.
-                        </div>
-                    </div>
-                </div>
-            </div>
+// Percentiles
+function percentile(arr,p){
+    const sorted=[...arr].sort((a,b)=>a-b);
+    const idx=(p/100)*(sorted.length-1);
+    const lower=Math.floor(idx), upper=Math.ceil(idx);
+    if(lower===upper) return sorted[lower];
+    return sorted[lower]*(upper-idx)+sorted[upper]*(idx-lower);
+}
 
-            <!-- Chart -->
-            <div class="card">
-                <div class="card-header">
-                    <h3 class="card-title">Price Distribution</h3>
-                </div>
-                <div id="chartContainer" style="height: 400px;"></div>
-            </div>
+// Aggregate for any horizon
+function aggregateExpected(expectedDaily, span){
+    const result=[];
+    for(let i=0;i<expectedDaily.length;i+=span){
+        result.push(weightedExpected(expectedDaily.slice(i,i+span)));
+    }
+    return result;
+}
 
-            <!-- Advanced Metrics -->
-            <div class="collapsible">
-                <button class="collapsible-trigger" id="advancedToggle">
-                    <div style="display: flex; align-items: center; gap: 8px;">
-                        <span>ℹ️</span>
-                        <span>Advanced Risk Metrics</span>
-                    </div>
-                    <span id="advancedChevron">▼</span>
-                </button>
-                <div class="collapsible-content" id="advancedContent">
-                    <div class="card" style="margin-top: 8px;">
-                        <div class="advanced-metrics" id="advancedMetrics">
-                            <!-- Populated by JavaScript -->
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+// Monte Carlo forecast
+async function runForecast(){
+    if(!csvData){alert("Upload CSV first"); return;}
+    const data=parseCSV(csvData);
+    if(!data) return;
+    const returns=calcReturns(data);
+    const {mu,sigma}=stats(returns);
+    const S0=data[data.length-1].c;
 
-    <script>
-        // Global variables
-        let csvData = null;
-        let isRunning = false;
+    const horizon=252; // 1 year
+    const simulations=50000;
+    const batchSize=1000;
+    const allPaths=[];
 
-        // DOM elements
-        const fileInput = document.getElementById('fileInput');
-        const fileUploadArea = document.getElementById('fileUploadArea');
-        const fileUploadText = document.getElementById('fileUploadText');
-        const runButton = document.getElementById('runButton');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressFill = document.getElementById('progressFill');
-        const progressText = document.getElementById('progressText');
-        const resultsContainer = document.getElementById('resultsContainer');
-        const advancedToggle = document.getElementById('advancedToggle');
-        const advancedContent = document.getElementById('advancedContent');
-        const advancedChevron = document.getElementById('advancedChevron');
-
-        // Monte Carlo functions
-        function gaussianRandom() {
-            let u = 0, v = 0;
-            while (u === 0) u = Math.random();
-            while (v === 0) v = Math.random();
-            return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+    for(let batch=0;batch<Math.ceil(simulations/batchSize);batch++){
+        for(let i=batch*batchSize;i<Math.min((batch+1)*batchSize,simulations);i++){
+            allPaths.push(simulatePath(S0, mu, sigma, horizon));
         }
+        await new Promise(r=>setTimeout(r,10));
+    }
 
-        function calculateStats(prices) {
-            const returns = [];
-            for (let i = 1; i < prices.length; i++) {
-                returns.push(Math.log(prices[i] / prices[i - 1]));
-            }
-            
-            const mean = returns.reduce((a, b) => a + b, 0) / returns.length;
-            const variance = returns.reduce((a, b) => a + (b - mean) ** 2, 0) / returns.length;
-            
-            return {
-                mu: mean * 252, // Annualized
-                sigma: Math.sqrt(variance * 252) // Annualized volatility
-            };
-        }
+    // Weighted expected daily prices
+    const expectedDaily=[];
+    for(let d=0;d<horizon+1;d++){
+        const dayPrices=allPaths.map(p=>p[d]);
+        expectedDaily.push(weightedExpected(dayPrices));
+    }
 
-        function simulateGBM(S0, mu, sigma, horizon) {
-            const dt = 1 / 252;
-            let S = S0;
-            
-            for (let i = 0; i < horizon; i++) {
-                const Z = gaussianRandom();
-                S *= Math.exp((mu - 0.5 * sigma * sigma) * dt + sigma * Z * Math.sqrt(dt));
-            }
-            
-            return S;
-        }
+    // Compute weighted OHLC for different horizons
+    function computeOHLC(prices){
+        return {
+            open: prices[0],
+            high: Math.max(...prices),
+            low: Math.min(...prices),
+            close: prices[prices.length-1]
+        };
+    }
 
-        function percentile(arr, p) {
-            const sorted = [...arr].sort((a, b) => a - b);
-            const index = (p / 100) * (sorted.length - 1);
-            const lower = Math.floor(index);
-            const upper = Math.ceil(index);
-            if (lower === upper) return sorted[lower];
-            return sorted[lower] * (upper - index) + sorted[upper] * (index - lower);
-        }
+    const dailyOHLC = computeOHLC(expectedDaily);
+    const weeklyOHLC = computeOHLC(aggregateExpected(expectedDaily,5));
+    const monthlyOHLC = computeOHLC(aggregateExpected(expectedDaily,21));
+    const yearlyOHLC = computeOHLC(aggregateExpected(expectedDaily,252));
 
-        async function runMonteCarlo() {
-            if (!csvData) {
-                alert('Please upload a CSV file first.');
-                return;
-            }
+    // 95% confidence interval
+    const allFinalPrices=allPaths.map(p=>p[p.length-1]);
+    const lowerCI=percentile(allFinalPrices,2.5);
+    const upperCI=percentile(allFinalPrices,97.5);
 
-            const prices = parseCSV(csvData);
-            if (!prices) return;
+    document.getElementById("output").textContent=`
+Start Price: $${S0.toFixed(2)}
 
-            const horizon = parseInt(document.getElementById('horizon').value);
-            const simulations = parseInt(document.getElementById('simulations').value);
-            const { mu, sigma } = calculateStats(prices);
-            const S0 = prices[prices.length - 1];
-            
-            isRunning = true;
-            runButton.disabled = true;
-            runButton.innerHTML = '<div class="spinner"></div> Running Simulation...';
-            progressContainer.classList.remove('hidden');
-            
-            const results = [];
-            const batchSize = 1000;
-            
-            for (let batch = 0; batch < Math.ceil(simulations / batchSize); batch++) {
-                const batchStart = batch * batchSize;
-                const batchEnd = Math.min(batchStart + batchSize, simulations);
-                
-                for (let i = batchStart; i < batchEnd; i++) {
-                    const finalPrice = simulateGBM(S0, mu, sigma, horizon);
-                    results.push(finalPrice);
-                }
-                
-                // Update progress
-                const progress = (batchEnd / simulations) * 100;
-                progressFill.style.width = progress + '%';
-                progressText.textContent = progress.toFixed(1) + '%';
-                
-                // Allow UI update
-                if (batch % 5 === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 10));
-                }
-            }
-            
-            displayResults(results, S0, simulations, horizon);
-            plotDistribution(results, S0);
-            
-            isRunning = false;
-            runButton.disabled = false;
-            runButton.innerHTML = '<span>📈</span> Run Monte Carlo';
-            progressContainer.classList.add('hidden');
-            resultsContainer.classList.remove('hidden');
-        }
+Weighted OHLC Forecasts:
+Daily:   O:${dailyOHLC.open.toFixed(2)} H:${dailyOHLC.high.toFixed(2)} L:${dailyOHLC.low.toFixed(2)} C:${dailyOHLC.close.toFixed(2)}
+Weekly:  O:${weeklyOHLC.open.toFixed(2)} H:${weeklyOHLC.high.toFixed(2)} L:${weeklyOHLC.low.toFixed(2)} C:${weeklyOHLC.close.toFixed(2)}
+Monthly: O:${monthlyOHLC.open.toFixed(2)} H:${monthlyOHLC.high.toFixed(2)} L:${monthlyOHLC.low.toFixed(2)} C:${monthlyOHLC.close.toFixed(2)}
+Yearly:  O:${yearlyOHLC.open.toFixed(2)} H:${yearlyOHLC.high.toFixed(2)} L:${yearlyOHLC.low.toFixed(2)} C:${yearlyOHLC.close.toFixed(2)}
 
-        function parseCSV(text) {
-            try {
-                const lines = text.trim().split('\n');
-                const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-                
-                const closeIndex = headers.findIndex(h => 
-                    h.includes('close') || h === 'c' || h.includes('price')
-                );
-                
-                if (closeIndex === -1) {
-                    alert('No Close price column found. Please ensure your CSV has a "Close" or "Price" column.');
-                    return null;
-                }
-                
-                const prices = lines.slice(1)
-                    .map(line => {
-                        const parts = line.split(',');
-                        return parseFloat(parts[closeIndex]);
-                    })
-                    .filter(price => !isNaN(price));
-                
-                if (prices.length < 30) {
-                    alert('Need at least 30 data points for reliable analysis.');
-                    return null;
-                }
-                
-                return prices.slice(-60); // Use last 60 data points
-            } catch (error) {
-                alert('Error parsing CSV: ' + error.message);
-                return null;
-            }
-        }
+95% Confidence Interval (Final Price): $${lowerCI.toFixed(2)} - $${upperCI.toFixed(2)}
+`;
+}
 
-        function displayResults(results, S0, simulations, horizon) {
-            const expectedPrice = results.reduce((a, b) => a + b, 0) / results.length;
-            const expectedReturn = ((expectedPrice - S0) / S0) * 100;
-            
-            const sortedResults = [...results].sort((a, b) => a - b);
-            const lowerCI = sortedResults[Math.floor(0.025 * results.length)];
-            const upperCI = sortedResults[Math.floor(0.975 * results.length)];
-            
-            // Update main display
-            document.getElementById('expectedPrice').textContent = `$${expectedPrice.toFixed(2)}`;
-            
-            const returnElement = document.getElementById('expectedReturn');
-            returnElement.textContent = `${expectedReturn >= 0 ? '+' : ''}${expectedReturn.toFixed(2)}%`;
-            returnElement.className = `price-change ${expectedReturn >= 0 ? 'positive' : 'negative'}`;
-            
-            document.getElementById('confidenceInterval').textContent = 
-                `$${lowerCI.toFixed(2)} - $${upperCI.toFixed(2)}`;
-            document.getElementById('currentPrice').textContent = `$${S0.toFixed(2)}`;
-            
-            document.getElementById('simulationInfo').textContent = 
-                `Based on ${simulations.toLocaleString()} simulations over ${horizon} days. Use this price point for position entry and the confidence interval for risk management.`;
-            
-            // Calculate advanced metrics
-            const var95 = percentile(results, 5);
-            const var99 = percentile(results, 1);
-            const downsideRisk = (results.filter(p => p < S0 * 0.95).length / results.length * 100);
-            const upsidePotential = (results.filter(p => p > S0 * 1.10).length / results.length * 100);
-            const returnsVol = Math.sqrt(results.reduce((sum, p) => sum + Math.pow(Math.log(p / S0), 2), 0) / results.length) * Math.sqrt(252);
-            const sharpeRatio = expectedReturn / (returnsVol * 100);
-            const maxDrawdown = ((Math.min(...results) - S0) / S0) * 100;
-            
-            // Update advanced metrics
-            const advancedMetrics = document.getElementById('advancedMetrics');
-            advancedMetrics.innerHTML = `
-                <div class="advanced-metric">
-                    <div class="metric-label">VaR 95%</div>
-                    <div class="metric-value" style="color: #ef4444;">$${var95.toFixed(2)}</div>
-                </div>
-                <div class="advanced-metric">
-                    <div class="metric-label">VaR 99%</div>
-                    <div class="metric-value" style="color: #ef4444;">$${var99.toFixed(2)}</div>
-                </div>
-                <div class="advanced-metric">
-                    <div class="metric-label">Downside Risk</div>
-                    <div class="metric-value" style="color: #f59e0b;">${downsideRisk.toFixed(1)}%</div>
-                </div>
-                <div class="advanced-metric">
-                    <div class="metric-label">Upside Potential</div>
-                    <div class="metric-value" style="color: #22c55e;">${upsidePotential.toFixed(1)}%</div>
-                </div>
-                <div class="advanced-metric">
-                    <div class="metric-label">Sharpe Ratio</div>
-                    <div class="metric-value">${sharpeRatio.toFixed(2)}</div>
-                </div>
-                <div class="advanced-metric">
-                    <div class="metric-label">Max Drawdown</div>
-                    <div class="metric-value" style="color: #ef4444;">${maxDrawdown.toFixed(1)}%</div>
-                </div>
-            `;
-        }
+document.getElementById("fileInput").addEventListener("change",(e)=>{
+    const file=e.target.files[0];
+    if(file){
+        const reader=new FileReader();
+        reader.onload=(e)=>{csvData=e.target.result;}
+        reader.readAsText(file);
+    }
+});
 
-        function plotDistribution(results, S0) {
-            // Create histogram data
-            const bins = 50;
-            const minPrice = Math.min(...results);
-            const maxPrice = Math.max(...results);
-            const binWidth = (maxPrice - minPrice) / bins;
-            
-            const histogramData = Array.from({ length: bins }, (_, i) => {
-                const binStart = minPrice + i * binWidth;
-                const binEnd = binStart + binWidth;
-                const count = results.filter(p => p >= binStart && p < binEnd).length;
-                return {
-                    x: binStart + binWidth / 2,
-                    y: count
-                };
-            });
-            
-            const expectedPrice = results.reduce((a, b) => a + b, 0) / results.length;
-            
-            const trace = {
-                x: histogramData.map(d => d.x),
-                y: histogramData.map(d => d.y),
-                type: 'bar',
-                name: 'Price Distribution',
-                marker: {
-                    color: 'rgba(34, 197, 94, 0.7)',
-                    line: { color: '#22c55e', width: 1 }
-                }
-            };
-            
-            const currentLine = {
-                x: [S0, S0],
-                y: [0, Math.max(...histogramData.map(d => d.y))],
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Current Price',
-                line: { color: '#3b82f6', width: 3, dash: 'dash' }
-            };
-            
-            const expectedLine = {
-                x: [expectedPrice, expectedPrice],
-                y: [0, Math.max(...histogramData.map(d => d.y))],
-                type: 'scatter',
-                mode: 'lines',
-                name: 'Expected Price',
-                line: { color: '#22c55e', width: 3 }
-            };
-            
-            const layout = {
-                title: {
-                    text: 'Monte Carlo Price Distribution',
-                    font: { color: '#f8fafc', size: 16 }
-                },
-                paper_bgcolor: 'rgba(0,0,0,0)',
-                plot_bgcolor: 'rgba(30, 41, 59, 0.5)',
-                font: { color: '#f8fafc' },
-                xaxis: {
-                    title: 'Price ($)',
-                    gridcolor: '#475569',
-                    color: '#f8fafc'
-                },
-                yaxis: {
-                    title: 'Frequency',
-                    gridcolor: '#475569',
-                    color: '#f8fafc'
-                },
-                margin: { t: 60, r: 30, b: 60, l: 60 },
-                showlegend: true,
-                legend: {
-                    bgcolor: 'rgba(30, 41, 59, 0.8)',
-                    bordercolor: '#475569',
-                    borderwidth: 1,
-                    font: { color: '#f8fafc' }
-                }
-            };
-            
-            Plotly.newPlot('chartContainer', [trace, currentLine, expectedLine], layout, {
-                displayModeBar: false,
-                responsive: true
-            });
-        }
-
-        // Event listeners
-        fileUploadArea.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    csvData = e.target.result;
-                    fileUploadText.textContent = file.name;
-                    fileUploadArea.classList.add('has-file');
-                };
-                reader.readAsText(file);
-            }
-        });
-
-        runButton.addEventListener('click', runMonteCarlo);
-
-        advancedToggle.addEventListener('click', () => {
-            const isOpen = advancedContent.classList.contains('open');
-            if (isOpen) {
-                advancedContent.classList.remove('open');
-                advancedChevron.textContent = '▼';
-            } else {
-                advancedContent.classList.add('open');
-                advancedChevron.textContent = '▲';
-            }
-        });
-
-        // Drag and drop functionality
-        fileUploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = '#22c55e';
-            fileUploadArea.style.background = 'rgba(34, 197, 94, 0.1)';
-        });
-
-        fileUploadArea.addEventListener('dragleave', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = '#475569';
-            fileUploadArea.style.background = 'transparent';
-        });
-
-        fileUploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileUploadArea.style.borderColor = '#475569';
-            fileUploadArea.style.background = 'transparent';
-            
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                const file = files[0];
-                if (file.type === 'text/csv' || file.name.endsWith('.csv')) {
-                    const reader = new FileReader();
-                    reader.onload = (e) => {
-                        csvData = e.target.result;
-                        fileUploadText.textContent = file.name;
-                        fileUploadArea.classList.add('has-file');
-                    };
-                    reader.readAsText(file);
-                } else {
-                    alert('Please upload a CSV file.');
-                }
-            }
-        });
-    </script>
+document.getElementById("runButton").addEventListener("click",runForecast);
+</script>
 </body>
 </html>
