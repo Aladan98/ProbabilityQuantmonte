@@ -3,210 +3,220 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generic Multi-Horizon Monte Carlo Forecast</title>
-<style>
-  body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
-  input, button { margin: 10px 0; }
-  pre { white-space: pre-line; background: #fff; padding: 10px; border-radius: 5px; }
-</style>
+<title>Hybrid Quant Forecast</title>
 </head>
 <body>
-
-<h2>Monte Carlo Forecast - Multi-Horizon (Generic)</h2>
-
-<input type="file" id="fileInput" accept=".csv"><br>
+<h2>Hybrid Quant Forecast - Cluster + Monte Carlo</h2>
+<input type="file" id="fileInput" accept=".csv">
 <button id="runButton">Run Forecast</button>
-
 <pre id="output"></pre>
 
 <script>
+// ================= CSV Parsing =================
 let csvData = null;
-
-// --- CSV Parsing ---
-function parseCSV(text) {
-  const lines = text.trim().split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
-  const oIndex = headers.indexOf('open');
-  const hIndex = headers.indexOf('high');
-  const lIndex = headers.indexOf('low');
-  const cIndex = headers.indexOf('close');
-
-  if ([oIndex,hIndex,lIndex,cIndex].some(i => i === -1)) {
-    alert("CSV must contain Open, High, Low, Close columns");
-    return null;
-  }
-
-  return lines.slice(1).map(line => {
-    const parts = line.split(',').map(parseFloat);
-    return {
-      o: parts[oIndex],
-      h: parts[hIndex],
-      l: parts[lIndex],
-      c: parts[cIndex]
-    };
-  });
+function parseCSV(text){
+    const lines = text.trim().split("\n");
+    const headers = lines[0].split(",").map(h=>h.trim().toLowerCase());
+    const oIndex = headers.indexOf("open");
+    const hIndex = headers.indexOf("high");
+    const lIndex = headers.indexOf("low");
+    const cIndex = headers.indexOf("close");
+    const dIndex = headers.findIndex(h=>h.includes("date")||h.includes("time"));
+    if([oIndex,hIndex,lIndex,cIndex,dIndex].some(i=>i===-1)){ alert("CSV must have Date,Open,High,Low,Close"); return null;}
+    return lines.slice(1).map(line=>{
+        const parts=line.split(",").map(parseFloat);
+        return {
+            date: line.split(",")[dIndex],
+            o:parts[oIndex], h:parts[hIndex], l:parts[lIndex], c:parts[cIndex]
+        };
+    });
 }
 
-// --- Gaussian Random ---
-function gaussianRandom() {
-  let u = 0, v = 0;
-  while(u === 0) u = Math.random();
-  while(v === 0) v = Math.random();
-  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+// ================= Gaussian Random =================
+function gaussianRandom(){
+    let u=0,v=0;
+    while(u===0) u=Math.random();
+    while(v===0) v=Math.random();
+    return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);
 }
 
-// --- Compute Log Returns for Close ---
-function calcReturns(data) {
-  const returns = [];
-  for(let i=1;i<data.length;i++){
-    returns.push(Math.log(data[i].c / data[i-1].c));
-  }
-  return returns;
-}
-
-// --- Stats ---
-function stats(returns){
-  const meanReturn = returns.reduce((a,b)=>a+b,0)/returns.length;
-  const variance = returns.reduce((a,b)=>a+(b-meanReturn)**2,0)/returns.length;
-  return {mu: meanReturn, sigma: Math.sqrt(variance)};
-}
-
-// --- Simulate Path ---
-function simulatePath(S0, mu, sigma, horizon){
-  const dt = 1; // daily steps
-  const prices = [S0];
-  for(let i=0;i<horizon;i++){
-    let Z = gaussianRandom();
-    const prev = prices[prices.length-1];
-    const next = prev * Math.exp((mu - 0.5*sigma*sigma)*dt + sigma*Z*Math.sqrt(dt));
-    prices.push(next);
-  }
-  return prices;
-}
-
-// --- Median ---
-function median(arr){
-  const sorted = [...arr].sort((a,b)=>a-b);
-  const mid = Math.floor(sorted.length/2);
-  return sorted.length % 2 === 0 ? (sorted[mid-1]+sorted[mid])/2 : sorted[mid];
-}
-
-// --- Percentile ---
-function percentile(arr,p){
-  const sorted = [...arr].sort((a,b)=>a-b);
-  const idx = (p/100)*(sorted.length-1);
-  const lower = Math.floor(idx), upper = Math.ceil(idx);
-  if(lower===upper) return sorted[lower];
-  return sorted[lower]*(upper-idx) + sorted[upper]*(idx-lower);
-}
-
-// --- Pathwise OHLC from simulated path ---
-function pathwiseOHLC(path){
-  return {
-    open: path[0],
-    high: Math.max(...path),
-    low: Math.min(...path),
-    close: path[path.length-1]
-  };
-}
-
-// --- Median OHLC across multiple paths ---
-function medianOHLC(ohlcArray){
-  return {
-    open: median(ohlcArray.map(p=>p.open)),
-    high: median(ohlcArray.map(p=>p.high)),
-    low: median(ohlcArray.map(p=>p.low)),
-    close: median(ohlcArray.map(p=>p.close))
-  };
-}
-
-// --- Aggregate paths for horizon (span in days) ---
-function aggregatePaths(allPaths, span){
-  const aggregated = [];
-  for(let path of allPaths){
-    const agg = [];
-    for(let i=0;i<path.length;i+=span){
-      const slice = path.slice(i,i+span);
-      agg.push({
-        open: slice[0],
-        high: Math.max(...slice),
-        low: Math.min(...slice),
-        close: slice[slice.length-1]
-      });
+// ================= Log Returns =================
+function calcReturns(data){
+    const returns=[];
+    for(let i=1;i<data.length;i++){
+        returns.push(Math.log(data[i].c/data[i-1].c));
     }
-    aggregated.push(agg);
-  }
-  return aggregated;
+    return returns;
 }
 
-// --- Run Forecast ---
+// ================= Stats =================
+function stats(returns){
+    const mean=returns.reduce((a,b)=>a+b,0)/returns.length;
+    const variance=returns.reduce((a,b)=>a+(b-mean)**2,0)/returns.length;
+    return {mu:mean*252, sigma:Math.sqrt(variance*252)};
+}
+
+// ================= Monte Carlo Path =================
+function simulatePath(S0, mu, sigma, horizon){
+    const dt=1/252;
+    const prices=[S0];
+    for(let i=0;i<horizon;i++){
+        let Z = gaussianRandom();
+        Z=Math.max(Math.min(Z,3),-3); // cap ±3σ
+        const next = prices[prices.length-1]*Math.exp((mu-0.5*sigma*sigma)*dt + sigma*Z*Math.sqrt(dt));
+        prices.push(next);
+    }
+    return prices;
+}
+
+// ================= Median =================
+function median(arr){
+    const sorted=[...arr].sort((a,b)=>a-b);
+    const mid=Math.floor(sorted.length/2);
+    return sorted.length%2===0?(sorted[mid-1]+sorted[mid])/2:sorted[mid];
+}
+
+// ================= Pathwise OHLC =================
+function pathwiseOHLC(paths){
+    return paths.map(path=>({open:path[0], high:Math.max(...path), low:Math.min(...path), close:path[path.length-1]}));
+}
+
+// ================= Median OHLC =================
+function medianOHLC(ohlcArray){
+    return {
+        open:median(ohlcArray.map(p=>p.open)),
+        high:median(ohlcArray.map(p=>p.high)),
+        low:median(ohlcArray.map(p=>p.low)),
+        close:median(ohlcArray.map(p=>p.close))
+    };
+}
+
+// ================= Percentile =================
+function percentile(arr,p){
+    const sorted=[...arr].sort((a,b)=>a-b);
+    const idx=(p/100)*(sorted.length-1);
+    const lower=Math.floor(idx), upper=Math.ceil(idx);
+    if(lower===upper) return sorted[lower];
+    return sorted[lower]*(upper-idx)+sorted[upper]*(idx-lower);
+}
+
+// ================= Cluster Analysis =================
+function clusterAnalysis(data){
+    let clusters={};
+    data.forEach((r,i)=>{
+        r.avg=(r.o+r.h+r.l+r.c)/4;
+        r.direction=r.c>r.o?"Up":"Down";
+        let cluster=(Math.floor(r.avg/0.01)*0.01).toFixed(2);
+        if(!clusters[cluster]) clusters[cluster]={count:0,up:0,down:0,lastDate:r.date,history:[]};
+        clusters[cluster].count++;
+        clusters[cluster].up+=r.direction==="Up"?1:0;
+        clusters[cluster].down+=r.direction==="Down"?1:0;
+        clusters[cluster].lastDate=r.date;
+        clusters[cluster].history.push(r);
+    });
+    return clusters;
+}
+
+// ================= Probabilistic Returns =================
+function computeProbabilisticRange(clusterHistory,futureDays=5){
+    let returns=clusterHistory.map((d,i)=>{
+        if(i+futureDays<clusterHistory.length){
+            return (clusterHistory[i+futureDays].c-d.avg)/d.avg;
+        } else return 0;
+    });
+    returns.sort((a,b)=>a-b);
+    let n=returns.length;
+    return {
+        low25:returns[Math.floor(0.25*n)]||0,
+        median50:returns[Math.floor(0.5*n)]||0,
+        high75:returns[Math.floor(0.75*n)]||0
+    };
+}
+
+// ================= Main Forecast =================
 async function runForecast(){
-  if(!csvData){alert("Upload CSV first"); return;}
-  const data = parseCSV(csvData);
-  if(!data) return;
+    if(!csvData){alert("Upload CSV first"); return;}
+    let data=parseCSV(csvData);
+    if(!data) return;
+    if(data.length>126) data=data.slice(data.length-126);
 
-  // Use last N days if needed
-  const N = Math.min(data.length, 126); // ~6 months
-  const recentData = data.slice(data.length - N);
+    // --- Cluster Analysis for next-day ---
+    let clusters=clusterAnalysis(data);
+    const lastRow=data[data.length-1];
+    const lastAvg=(lastRow.o+lastRow.h+lastRow.l+lastRow.c)/4;
+    let closestCluster=Object.values(clusters).reduce((prev,curr)=>{
+        return Math.abs(lastAvg-parseFloat(curr.history[0].avg))<Math.abs(lastAvg-parseFloat(prev.history[0].avg))?curr:prev;
+    });
 
-  const returns = calcReturns(recentData);
-  const {mu, sigma} = stats(returns);
-  const S0 = recentData[recentData.length-1].c;
+    let probRange=computeProbabilisticRange(closestCluster.history,1);
+    let nextDayLow=(lastAvg*(1+probRange.low25)).toFixed(2);
+    let nextDayMed=(lastAvg*(1+probRange.median50)).toFixed(2);
+    let nextDayHigh=(lastAvg*(1+probRange.high75)).toFixed(2);
 
-  const horizon = 252; // 1 year
-  const simulations = 10000;
-  const allPaths = [];
+    // --- Monte Carlo ---
+    const returns=calcReturns(data);
+    const {mu,sigma}=stats(returns);
+    const S0=lastRow.c;
+    const horizon=252;
+    const simulations=10000;
+    const allPaths=[];
+    for(let i=0;i<simulations;i++){
+        allPaths.push(simulatePath(S0,mu,sigma,horizon));
+        if(i%500===0) await new Promise(r=>setTimeout(r,1));
+    }
 
-  for(let i=0;i<simulations;i++){
-    allPaths.push(simulatePath(S0, mu, sigma, horizon));
-    if(i % 1000 === 0) await new Promise(r=>setTimeout(r,0));
-  }
+    // Daily/Weekly/Monthly/Yearly aggregation
+    function aggregatePaths(paths,span){
+        const agg=[];
+        for(let path of paths){
+            const res=[];
+            for(let i=0;i<path.length;i+=span) res.push(median(path.slice(i,i+span)));
+            agg.push(res);
+        }
+        return agg;
+    }
+    const weeklyPaths=aggregatePaths(allPaths,5);
+    const monthlyPaths=aggregatePaths(allPaths,21);
+    const yearlyPaths=aggregatePaths(allPaths,252);
 
-  // --- Daily OHLC ---
-  const dailyOHLC = medianOHLC(allPaths.map(path => pathwiseOHLC(path)));
+    const dailyOHLC=medianOHLC(pathwiseOHLC(allPaths));
+    const weeklyOHLC=medianOHLC(pathwiseOHLC(weeklyPaths));
+    const monthlyOHLC=medianOHLC(pathwiseOHLC(monthlyPaths));
+    const yearlyOHLC=medianOHLC(pathwiseOHLC(yearlyPaths));
 
-  // --- Weekly, Monthly, Yearly OHLC ---
-  const weeklyPaths = aggregatePaths(allPaths, 5).map(arr=>medianOHLC(arr));
-  const monthlyPaths = aggregatePaths(allPaths, 21).map(arr=>medianOHLC(arr));
-  const yearlyPaths = aggregatePaths(allPaths, 252).map(arr=>medianOHLC(arr));
+    const allFinalPrices=allPaths.map(p=>p[p.length-1]);
+    const forecastPrice=median(allFinalPrices);
+    const lowerCI=percentile(allFinalPrices,2.5);
+    const upperCI=percentile(allFinalPrices,97.5);
 
-  const weeklyOHLC = medianOHLC(weeklyPaths);
-  const monthlyOHLC = medianOHLC(monthlyPaths);
-  const yearlyOHLC = medianOHLC(yearlyPaths);
+    // --- Output ---
+    document.getElementById("output").textContent=`
+Last Price: $${S0.toFixed(2)}
 
-  // --- Forecast median and CI ---
-  const allFinalPrices = allPaths.map(p=>p[p.length-1]);
-  const forecastPrice = median(allFinalPrices);
-  const lowerCI = percentile(allFinalPrices, 2.5);
-  const upperCI = percentile(allFinalPrices, 97.5);
+--- Cluster-based Next-Day Forecast ---
+Low: $${nextDayLow}, Median: $${nextDayMed}, High: $${nextDayHigh}
 
-  document.getElementById("output").textContent = `
-Start Price: $${S0.toFixed(2)}
+--- Monte Carlo Forecasts ---
+Daily OHLC: O:${dailyOHLC.open.toFixed(2)} H:${dailyOHLC.high.toFixed(2)} L:${dailyOHLC.low.toFixed(2)} C:${dailyOHLC.close.toFixed(2)}
+Weekly OHLC: O:${weeklyOHLC.open.toFixed(2)} H:${weeklyOHLC.high.toFixed(2)} L:${weeklyOHLC.low.toFixed(2)} C:${weeklyOHLC.close.toFixed(2)}
+Monthly OHLC: O:${monthlyOHLC.open.toFixed(2)} H:${monthlyOHLC.high.toFixed(2)} L:${monthlyOHLC.low.toFixed(2)} C:${monthlyOHLC.close.toFixed(2)}
+Yearly OHLC: O:${yearlyOHLC.open.toFixed(2)} H:${yearlyOHLC.high.toFixed(2)} L:${yearlyOHLC.low.toFixed(2)} C:${yearlyOHLC.close.toFixed(2)}
 
 Forecast Median Price (1Y): $${forecastPrice.toFixed(2)}
-
-Median OHLC Forecasts:
-Daily:   O:${dailyOHLC.open.toFixed(2)} H:${dailyOHLC.high.toFixed(2)} L:${dailyOHLC.low.toFixed(2)} C:${dailyOHLC.close.toFixed(2)}
-Weekly:  O:${weeklyOHLC.open.toFixed(2)} H:${weeklyOHLC.high.toFixed(2)} L:${weeklyOHLC.low.toFixed(2)} C:${weeklyOHLC.close.toFixed(2)}
-Monthly: O:${monthlyOHLC.open.toFixed(2)} H:${monthlyOHLC.high.toFixed(2)} L:${monthlyOHLC.low.toFixed(2)} C:${monthlyOHLC.close.toFixed(2)}
-Yearly:  O:${yearlyOHLC.open.toFixed(2)} H:${yearlyOHLC.high.toFixed(2)} L:${yearlyOHLC.low.toFixed(2)} C:${yearlyOHLC.close.toFixed(2)}
-
-95% Confidence Interval (Final Price): $${lowerCI.toFixed(2)} - $${upperCI.toFixed(2)}
+95% CI: $${lowerCI.toFixed(2)} - $${upperCI.toFixed(2)}
 `;
 }
 
-// --- File input handling ---
-document.getElementById("fileInput").addEventListener("change", (e)=>{
-  const file = e.target.files[0];
-  if(file){
-    const reader = new FileReader();
-    reader.onload = e=>{ csvData = e.target.result; };
-    reader.readAsText(file);
-  }
+document.getElementById("fileInput").addEventListener("change",(e)=>{
+    const file=e.target.files[0];
+    if(file){
+        const reader=new FileReader();
+        reader.onload=(e)=>{csvData=e.target.result;}
+        reader.readAsText(file);
+    }
 });
 
-document.getElementById("runButton").addEventListener("click", runForecast);
+document.getElementById("runButton").addEventListener("click",runForecast);
 </script>
-
 </body>
 </html>
