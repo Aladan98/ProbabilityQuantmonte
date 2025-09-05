@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Weighted OHLC Monte Carlo Forecast - Multi-Horizon</title>
+<title>Median OHLC Monte Carlo Forecast - Multi-Horizon</title>
 </head>
 <body>
-<h2>Weighted OHLC Monte Carlo Forecast - Multi-Horizon</h2>
+<h2>Median OHLC Monte Carlo Forecast - Multi-Horizon</h2>
 <input type="file" id="fileInput" accept=".csv">
 <button id="runButton">Run Forecast</button>
 <pre id="output"></pre>
@@ -68,21 +68,44 @@ function simulatePath(S0, mu, sigma, horizon){
     return prices;
 }
 
-// Weighted expected value
-function weightedExpected(arr){
-    const precision=0.01; 
-    const freqMap=new Map();
-    arr.forEach(p=>{
-        const key=Math.round(p/precision)*precision;
-        freqMap.set(key,(freqMap.get(key)||0)+1);
-    });
-    const total=arr.length;
-    let sum=0;
-    freqMap.forEach((count, price)=>{
-        const prob=count/total;
-        sum+=price*prob;
-    });
-    return sum;
+// Median function
+function median(arr){
+    const sorted = [...arr].sort((a,b)=>a-b);
+    const mid = Math.floor(sorted.length/2);
+    return sorted.length % 2 === 0 ? (sorted[mid-1]+sorted[mid])/2 : sorted[mid];
+}
+
+// Pathwise OHLC
+function pathwiseOHLC(paths) {
+    return paths.map(path => ({
+        open: path[0],
+        high: Math.max(...path),
+        low: Math.min(...path),
+        close: path[path.length-1]
+    }));
+}
+
+// Median OHLC across paths
+function medianOHLC(ohlcArray) {
+    return {
+        open: median(ohlcArray.map(p => p.open)),
+        high: median(ohlcArray.map(p => p.high)),
+        low: median(ohlcArray.map(p => p.low)),
+        close: median(ohlcArray.map(p => p.close))
+    };
+}
+
+// Aggregate paths for multi-horizon
+function aggregatePaths(paths, span){
+    const aggregated = [];
+    for(let path of paths){
+        const result = [];
+        for(let i=0;i<path.length;i+=span){
+            result.push(median(path.slice(i,i+span)));
+        }
+        aggregated.push(result);
+    }
+    return aggregated;
 }
 
 // Percentiles
@@ -92,15 +115,6 @@ function percentile(arr,p){
     const lower=Math.floor(idx), upper=Math.ceil(idx);
     if(lower===upper) return sorted[lower];
     return sorted[lower]*(upper-idx)+sorted[upper]*(idx-lower);
-}
-
-// Aggregate for any horizon
-function aggregateExpected(expectedDaily, span){
-    const result=[];
-    for(let i=0;i<expectedDaily.length;i+=span){
-        result.push(weightedExpected(expectedDaily.slice(i,i+span)));
-    }
-    return result;
 }
 
 // Monte Carlo forecast
@@ -124,37 +138,28 @@ async function runForecast(){
         await new Promise(r=>setTimeout(r,10));
     }
 
-    // Weighted expected daily prices
-    const expectedDaily=[];
-    for(let d=0;d<horizon+1;d++){
-        const dayPrices=allPaths.map(p=>p[d]);
-        expectedDaily.push(weightedExpected(dayPrices));
-    }
+    // Daily OHLC
+    const dailyPathOHLC = pathwiseOHLC(allPaths);
+    const dailyOHLC = medianOHLC(dailyPathOHLC);
 
-    // Compute weighted OHLC for different horizons
-    function computeOHLC(prices){
-        return {
-            open: prices[0],
-            high: Math.max(...prices),
-            low: Math.min(...prices),
-            close: prices[prices.length-1]
-        };
-    }
+    // Multi-horizon OHLC
+    const weeklyPaths = aggregatePaths(allPaths,5);
+    const monthlyPaths = aggregatePaths(allPaths,21);
+    const yearlyPaths = aggregatePaths(allPaths,252);
 
-    const dailyOHLC = computeOHLC(expectedDaily);
-    const weeklyOHLC = computeOHLC(aggregateExpected(expectedDaily,5));
-    const monthlyOHLC = computeOHLC(aggregateExpected(expectedDaily,21));
-    const yearlyOHLC = computeOHLC(aggregateExpected(expectedDaily,252));
+    const weeklyOHLC = medianOHLC(pathwiseOHLC(weeklyPaths));
+    const monthlyOHLC = medianOHLC(pathwiseOHLC(monthlyPaths));
+    const yearlyOHLC = medianOHLC(pathwiseOHLC(yearlyPaths));
 
     // 95% confidence interval
     const allFinalPrices=allPaths.map(p=>p[p.length-1]);
     const lowerCI=percentile(allFinalPrices,2.5);
     const upperCI=percentile(allFinalPrices,97.5);
 
-    document.getElementById("output").textContent=`
+    document.getElementById("output").textContent=`    
 Start Price: $${S0.toFixed(2)}
 
-Weighted OHLC Forecasts:
+Median OHLC Forecasts:
 Daily:   O:${dailyOHLC.open.toFixed(2)} H:${dailyOHLC.high.toFixed(2)} L:${dailyOHLC.low.toFixed(2)} C:${dailyOHLC.close.toFixed(2)}
 Weekly:  O:${weeklyOHLC.open.toFixed(2)} H:${weeklyOHLC.high.toFixed(2)} L:${weeklyOHLC.low.toFixed(2)} C:${weeklyOHLC.close.toFixed(2)}
 Monthly: O:${monthlyOHLC.open.toFixed(2)} H:${monthlyOHLC.high.toFixed(2)} L:${monthlyOHLC.low.toFixed(2)} C:${monthlyOHLC.close.toFixed(2)}
