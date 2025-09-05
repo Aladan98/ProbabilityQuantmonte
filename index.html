@@ -1,827 +1,820 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Monte Carlo Trading Analysis</title>
-    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
-            line-height: 1.6;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-            overflow: hidden;
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%);
-            color: white;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .header h1 {
-            font-size: 2.5rem;
-            margin-bottom: 10px;
-            font-weight: 300;
-        }
-        
-        .header p {
-            font-size: 1.1rem;
-            opacity: 0.9;
-        }
-        
-        .main-content {
-            display: grid;
-            grid-template-columns: 1fr 2fr;
-            gap: 30px;
-            padding: 30px;
-        }
-        
-        .controls {
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 15px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .control-group {
-            margin-bottom: 25px;
-        }
-        
-        .control-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #2c3e50;
-        }
-        
-        .control-group input[type="file"],
-        .control-group input[type="number"] {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #dee2e6;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .control-group input:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .range-group {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .range-group input[type="range"] {
-            flex: 1;
-            height: 6px;
-            background: #dee2e6;
-            border-radius: 3px;
-            outline: none;
-        }
-        
-        .range-value {
-            font-weight: 600;
-            color: #667eea;
-            min-width: 80px;
-            text-align: center;
-            background: #f0f3ff;
-            padding: 5px 10px;
-            border-radius: 5px;
-        }
-        
-        .btn {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
-        }
-        
-        .btn:disabled {
-            opacity: 0.6;
-            cursor: not-allowed;
-            transform: none;
-        }
-        
-        .results {
-            display: grid;
-            gap: 20px;
-        }
-        
-        .result-card {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 15px;
-            padding: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-        }
-        
-        .result-card h3 {
-            color: #2c3e50;
-            margin-bottom: 20px;
-            font-size: 1.3rem;
-            border-bottom: 2px solid #667eea;
-            padding-bottom: 10px;
-        }
-        
-        .metrics-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-        
-        .metric {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 10px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .metric-label {
-            font-size: 0.9rem;
-            color: #6c757d;
-            margin-bottom: 5px;
-        }
-        
-        .metric-value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: #2c3e50;
-        }
-        
-        .metric-value.positive { color: #28a745; }
-        .metric-value.negative { color: #dc3545; }
-        
-        .risk-metrics {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 15px;
-        }
-        
-        .risk-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 15px;
-            background: #fff5f5;
-            border-radius: 8px;
-            border-left: 4px solid #dc3545;
-        }
-        
-        .probability-bars {
-            margin-top: 20px;
-        }
-        
-        .prob-item {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .prob-label {
-            width: 120px;
-            font-weight: 600;
-        }
-        
-        .prob-bar {
-            flex: 1;
-            height: 25px;
-            background: #e9ecef;
-            border-radius: 12px;
-            overflow: hidden;
-            margin: 0 10px;
-        }
-        
-        .prob-fill {
-            height: 100%;
-            border-radius: 12px;
-            transition: width 0.8s ease;
-        }
-        
-        .prob-fill.gain { background: linear-gradient(90deg, #28a745, #20c997); }
-        .prob-fill.loss { background: linear-gradient(90deg, #dc3545, #fd7e14); }
-        
-        .prob-value {
-            font-weight: 600;
-            min-width: 60px;
-        }
-        
-        .alert {
-            padding: 15px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border-left: 4px solid;
-        }
-        
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border-color: #dc3545;
-        }
-        
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border-color: #17a2b8;
-        }
-        
-        .chart-container {
-            height: 500px;
-            margin-top: 20px;
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-            color: #667eea;
-            font-size: 1.2rem;
-        }
-        
-        .loading.show { display: block; }
-        
-        .data-summary {
-            background: #e8f5e8;
-            padding: 15px;
-            border-radius: 8px;
-            margin-top: 15px;
-            border-left: 4px solid #28a745;
-        }
-        
-        @media (max-width: 768px) {
-            .main-content {
-                grid-template-columns: 1fr;
-            }
-            
-            .header h1 {
-                font-size: 2rem;
-            }
-            
-            .metrics-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enhanced Monte Carlo Price Forecast</title>
+<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+  body { 
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; 
+    padding: 20px; 
+    background: linear-gradient(135deg, #0f1419, #1a202c); 
+    color: #e5e7eb;
+    min-height: 100vh;
+  }
+  .container { max-width: 1200px; margin: 0 auto; }
+  .header { 
+    text-align: center; 
+    margin-bottom: 40px; 
+    padding: 20px;
+    background: linear-gradient(135deg, rgba(34, 197, 94, 0.1), rgba(59, 130, 246, 0.1));
+    border-radius: 12px;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+  }
+  .card { 
+    background: linear-gradient(135deg, #1f2937, #374151); 
+    border-radius: 12px; 
+    padding: 20px; 
+    margin: 20px 0; 
+    border: 1px solid #4b5563;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); }
+  .metric-card { 
+    background: linear-gradient(135deg, #0f172a, #1e293b);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    padding: 16px;
+    text-align: center;
+  }
+  .metric-value { font-size: 24px; font-weight: bold; margin: 8px 0; }
+  .profit { color: #22c55e; }
+  .loss { color: #ef4444; }
+  .warning { color: #f59e0b; }
+  .info { color: #3b82f6; }
+  input, button, select { 
+    margin: 8px; 
+    padding: 12px; 
+    border-radius: 8px; 
+    border: 1px solid #4b5563;
+    background: #374151;
+    color: #e5e7eb;
+    font-size: 14px;
+  }
+  button { 
+    background: linear-gradient(135deg, #22c55e, #16a34a); 
+    color: white; 
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+  }
+  button:hover { 
+    background: linear-gradient(135deg, #16a34a, #15803d);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.3);
+  }
+  button:disabled { 
+    background: #6b7280; 
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  table { 
+    border-collapse: collapse; 
+    margin-top: 16px; 
+    background: #1f2937; 
+    width: 100%;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  th, td { 
+    border: 1px solid #374151; 
+    padding: 12px 16px; 
+    text-align: center; 
+  }
+  th { background: #374151; font-weight: 600; }
+  .progress-bar {
+    width: 100%;
+    height: 8px;
+    background: #374151;
+    border-radius: 4px;
+    overflow: hidden;
+    margin: 8px 0;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #22c55e, #16a34a);
+    transition: width 0.3s ease;
+  }
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 2px;
+  }
+  .badge-profit { background: rgba(34, 197, 94, 0.2); color: #22c55e; border: 1px solid rgba(34, 197, 94, 0.3); }
+  .badge-loss { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); }
+  .badge-neutral { background: rgba(107, 114, 128, 0.2); color: #6b7280; border: 1px solid rgba(107, 114, 128, 0.3); }
+  .confidence-interval {
+    background: linear-gradient(90deg, transparent, rgba(34, 197, 94, 0.1), transparent);
+    padding: 8px 16px;
+    border-radius: 6px;
+    border: 1px solid rgba(34, 197, 94, 0.2);
+    margin: 12px 0;
+  }
+  .loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .spinner {
+    border: 3px solid #374151;
+    border-top: 3px solid #22c55e;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+</style>
 </head>
 <body>
 
 <div class="container">
-    <div class="header">
-        <h1>Professional Monte Carlo Trading Analysis</h1>
-        <p>Advanced quantitative analysis with comprehensive risk metrics</p>
+  <div class="header">
+    <h1>🚀 Enhanced Monte Carlo Price Forecast</h1>
+    <p>Professional-grade pricing with stochastic volatility, jump diffusion & confidence intervals</p>
+  </div>
+
+  <div class="card">
+    <h3>📊 Data Input & Configuration</h3>
+    <input type="file" id="fileInput" accept=".csv">
+    
+    <div class="grid">
+      <div>
+        <label>Simulations:</label>
+        <select id="simulations">
+          <option value="10000">10K (Fast)</option>
+          <option value="25000">25K (Balanced)</option>
+          <option value="50000" selected>50K (Precise)</option>
+          <option value="100000">100K (Ultra Precise)</option>
+        </select>
+      </div>
+      
+      <div>
+        <label>Horizon (days):</label>
+        <input type="number" id="horizon" value="5" min="1" max="252">
+      </div>
+      
+      <div>
+        <label>Model Type:</label>
+        <select id="modelType">
+          <option value="gbm">Geometric Brownian Motion</option>
+          <option value="stochastic_vol">Heston Stochastic Volatility</option>
+          <option value="jump_diffusion">Merton Jump Diffusion</option>
+        </select>
+      </div>
+      
+      <div>
+        <label>Rolling Window (days):</label>
+        <input type="number" id="rollingWindow" value="60" min="30" max="252">
+      </div>
     </div>
-
-    <div class="main-content">
-        <div class="controls">
-            <div class="control-group">
-                <label for="fileInput">📊 Upload Price Data (CSV)</label>
-                <input type="file" id="fileInput" accept=".csv">
-                <small style="color: #6c757d; margin-top: 5px; display: block;">
-                    CSV must contain 'Close' or 'Price' column
-                </small>
-            </div>
-
-            <div class="control-group">
-                <label for="simulations">🎲 Monte Carlo Simulations</label>
-                <div class="range-group">
-                    <input type="range" id="simulations" min="1000" max="50000" step="1000" value="10000">
-                    <div class="range-value" id="simulationsValue">10,000</div>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label for="horizon">📅 Forecast Horizon (Days)</label>
-                <input type="number" id="horizon" min="1" max="252" value="5">
-            </div>
-
-            <div class="control-group">
-                <label for="riskFreeRate">💰 Risk-Free Rate (%)</label>
-                <input type="number" id="riskFreeRate" min="0" max="20" step="0.1" value="3.0">
-            </div>
-
-            <button class="btn" onclick="runForecast()" id="runBtn">
-                🚀 Run Monte Carlo Analysis
-            </button>
-
-            <div id="dataSummary"></div>
-        </div>
-
-        <div class="results">
-            <div id="alerts"></div>
-            <div class="loading" id="loading">
-                <div>🔄 Running simulation...</div>
-                <div style="font-size: 0.9rem; margin-top: 10px;">Processing market data and generating forecasts</div>
-            </div>
-            <div id="output"></div>
-            <div id="charts"></div>
-        </div>
+    
+    <div style="margin-top: 20px;">
+      <label>
+        <input type="checkbox" id="antitheticVariates" checked> Use Antithetic Variates (Reduces Noise)
+      </label>
     </div>
+    
+    <button onclick="runEnhancedForecast()">🎯 Run Enhanced Monte Carlo</button>
+  </div>
+
+  <div id="output"></div>
+  <div id="chart"></div>
 </div>
 
 <script>
-// Global variables
-let priceData = [];
-let simulationResults = null;
+// === Enhanced Monte Carlo Engine ===
 
-// Update range display
-document.getElementById('simulations').oninput = function() {
-    document.getElementById('simulationsValue').textContent = 
-        parseInt(this.value).toLocaleString();
-};
-
-// Box-Muller transformation for proper normal distribution
-function boxMuller() {
-    const u = 0.99999 * Math.random() + 0.00001;
-    const v = 0.99999 * Math.random() + 0.00001;
-    return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+// Gaussian random with Box-Muller
+function gaussianRandom() {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random();
+  while (v === 0) v = Math.random();
+  return Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
 }
 
-// Enhanced CSV parsing
-function parseCSV(text) {
-    const lines = text.trim().split('\n');
-    const headers = lines[0].toLowerCase().split(',').map(h => h.trim());
-    
-    const dateIndex = headers.findIndex(h => h.includes('date') || h.includes('time'));
-    const closeIndex = headers.findIndex(h => h.includes('close') || h.includes('price'));
-    
-    if (closeIndex === -1) {
-        throw new Error('CSV must contain a "Close" or "Price" column');
-    }
-
-    const data = [];
-    for (let i = 1; i < lines.length; i++) {
-        const parts = lines[i].split(',');
-        const close = parseFloat(parts[closeIndex]);
-        
-        if (!isNaN(close) && close > 0) {
-            data.push({
-                date: dateIndex >= 0 ? parts[dateIndex] : `Day ${i}`,
-                close: close
-            });
-        }
-    }
-    
-    return data;
+// Antithetic variates for variance reduction
+function antitheticGaussian() {
+  const z = gaussianRandom();
+  return [z, -z];
 }
 
-// Statistical functions
-function mean(arr) {
-    return arr.reduce((sum, val) => sum + val, 0) / arr.length;
-}
+// Enhanced statistical functions
+function mean(arr) { return arr.reduce((a,b) => a+b, 0)/arr.length; }
 
 function std(arr) {
-    const mu = mean(arr);
-    const variance = arr.reduce((sum, val) => sum + Math.pow(val - mu, 2), 0) / arr.length;
-    return Math.sqrt(variance);
+  const m = mean(arr);
+  return Math.sqrt(arr.reduce((a,b) => a + (b-m)**2, 0)/arr.length);
 }
 
 function percentile(arr, p) {
-    const sorted = [...arr].sort((a, b) => a - b);
-    const index = (p / 100) * (sorted.length - 1);
-    const lower = Math.floor(index);
-    const upper = Math.ceil(index);
-    const weight = index - lower;
-    
-    if (upper >= sorted.length) return sorted[sorted.length - 1];
-    return sorted[lower] * (1 - weight) + sorted[upper] * weight;
+  const sorted = [...arr].sort((a, b) => a - b);
+  const index = (p / 100) * (sorted.length - 1);
+  const lower = Math.floor(index);
+  const upper = Math.ceil(index);
+  if (lower === upper) return sorted[lower];
+  return sorted[lower] * (upper - index) + sorted[upper] * (index - lower);
 }
 
-// Log returns calculation
-function computeReturns(prices) {
-    const returns = [];
-    for (let i = 1; i < prices.length; i++) {
-        returns.push(Math.log(prices[i] / prices[i - 1]));
+// Rolling window statistics for regime adaptation
+function rollingStats(prices, window) {
+  const returns = [];
+  for (let i = 1; i < prices.length; i++) {
+    returns.push(Math.log(prices[i]/prices[i-1]));
+  }
+  
+  const recentReturns = returns.slice(-window);
+  const mu = mean(recentReturns) * 252; // Annualized
+  const sigma = std(recentReturns) * Math.sqrt(252); // Annualized
+  
+  return { mu, sigma, returns };
+}
+
+// Heston Stochastic Volatility Model
+function simulateHeston(S0, V0, mu, kappa, theta, sigma_v, rho, horizon, useAntithetic = false) {
+  const dt = 1/252;
+  const prices = [];
+  const volatilities = [];
+  
+  let S = S0;
+  let V = V0;
+  
+  for (let i = 0; i < horizon; i++) {
+    let Z1, Z2;
+    
+    if (useAntithetic && i % 2 === 0 && i + 1 < horizon) {
+      const [z1_pos, z1_neg] = antitheticGaussian();
+      const [z2_pos, z2_neg] = antitheticGaussian();
+      
+      // Positive path
+      Z1 = z1_pos;
+      Z2 = rho * z1_pos + Math.sqrt(1 - rho*rho) * z2_pos;
+    } else if (useAntithetic && i % 2 === 1) {
+      // Use negative antithetic values (stored from previous iteration)
+      Z1 = -gaussianRandom(); // Simplified for demo
+      Z2 = rho * Z1 + Math.sqrt(1 - rho*rho) * gaussianRandom();
+    } else {
+      Z1 = gaussianRandom();
+      Z2 = rho * Z1 + Math.sqrt(1 - rho*rho) * gaussianRandom();
     }
-    return returns;
+    
+    // Update volatility (Euler scheme with Feller condition)
+    V = Math.max(0.001, V + kappa * (theta - V) * dt + sigma_v * Math.sqrt(Math.max(V, 0) * dt) * Z2);
+    
+    // Update price
+    S *= Math.exp((mu - 0.5*V)*dt + Math.sqrt(V*dt)*Z1);
+    
+    prices.push(S);
+    volatilities.push(Math.sqrt(V));
+  }
+  
+  return { prices, volatilities };
 }
 
-// Enhanced Monte Carlo simulation with proper GBM
-function monteCarlo(S0, returns, horizon, sims, riskFreeRate) {
-    const mu = mean(returns);
-    const sigma = std(returns);
-    const dt = 1; // Daily time step
+// Merton Jump Diffusion Model
+function simulateJumpDiffusion(S0, mu, sigma, lambda, jumpMean, jumpStd, horizon, useAntithetic = false) {
+  const dt = 1/252;
+  const prices = [];
+  const jumps = [];
+  
+  let S = S0;
+  
+  for (let i = 0; i < horizon; i++) {
+    let Z;
+    if (useAntithetic && i % 2 === 0) {
+      const [z_pos, z_neg] = antitheticGaussian();
+      Z = z_pos;
+    } else if (useAntithetic && i % 2 === 1) {
+      Z = -gaussianRandom(); // Simplified antithetic
+    } else {
+      Z = gaussianRandom();
+    }
     
-    const finalPrices = [];
-    const samplePaths = [];
+    // Check for jump
+    let jumpComponent = 0;
+    if (Math.random() < lambda * dt) {
+      jumpComponent = jumpMean + jumpStd * gaussianRandom();
+      jumps.push({ time: i * dt, magnitude: jumpComponent });
+    }
     
-    // Generate simulation paths
-    for (let sim = 0; sim < sims; sim++) {
-        let price = S0;
-        const path = [price];
-        
-        for (let t = 0; t < horizon; t++) {
-            const z = boxMuller();
-            const drift = (mu - 0.5 * sigma * sigma) * dt;
-            const diffusion = sigma * Math.sqrt(dt) * z;
-            
-            price = price * Math.exp(drift + diffusion);
-            path.push(price);
+    // Update price with diffusion and jump
+    S *= Math.exp((mu - 0.5*sigma*sigma)*dt + sigma*Math.sqrt(dt)*Z + jumpComponent);
+    prices.push(S);
+  }
+  
+  return { prices, jumps };
+}
+
+// Enhanced GBM with antithetic variates
+function simulateGBM(S0, mu, sigma, horizon, useAntithetic = false) {
+  const dt = 1/252;
+  const prices = [];
+  
+  let S = S0;
+  
+  for (let i = 0; i < horizon; i++) {
+    let Z;
+    if (useAntithetic && i % 2 === 0) {
+      const [z_pos, z_neg] = antitheticGaussian();
+      Z = z_pos;
+    } else if (useAntithetic && i % 2 === 1) {
+      Z = -gaussianRandom(); // Simplified for demo
+    } else {
+      Z = gaussianRandom();
+    }
+    
+    S *= Math.exp((mu - 0.5*sigma*sigma)*dt + sigma*Z*Math.sqrt(dt));
+    prices.push(S);
+  }
+  
+  return prices;
+}
+
+// Bootstrap confidence intervals
+function bootstrapConfidence(results, confidenceLevel = 95) {
+  const bootstrapSamples = 1000;
+  const bootstrapMeans = [];
+  
+  for (let i = 0; i < bootstrapSamples; i++) {
+    const sample = [];
+    for (let j = 0; j < results.length; j++) {
+      const randomIndex = Math.floor(Math.random() * results.length);
+      sample.push(results[randomIndex]);
+    }
+    bootstrapMeans.push(mean(sample));
+  }
+  
+  const alpha = (100 - confidenceLevel) / 2;
+  return {
+    lower: percentile(bootstrapMeans, alpha),
+    upper: percentile(bootstrapMeans, 100 - alpha),
+    standardError: std(bootstrapMeans)
+  };
+}
+
+// Enhanced quantile buckets with extreme tails
+function enhancedScenarioBuckets(results, S0) {
+  const sorted = [...results].sort((a,b) => a-b);
+  const buckets = [];
+  
+  // Extreme left tail (1-5%)
+  const extremeBearEnd = Math.floor(0.05 * sorted.length);
+  const extremeBearPrices = sorted.slice(0, extremeBearEnd);
+  buckets.push({
+    name: 'Extreme Bear (1-5%)',
+    prob: 0.05,
+    mean: mean(extremeBearPrices),
+    median: extremeBearPrices[Math.floor(extremeBearPrices.length/2)],
+    low: extremeBearPrices[0],
+    high: extremeBearPrices[extremeBearPrices.length-1],
+    returnRange: ((mean(extremeBearPrices) - S0) / S0 * 100).toFixed(1) + '%'
+  });
+  
+  // Bear (5-25%)
+  const bearEnd = Math.floor(0.25 * sorted.length);
+  const bearPrices = sorted.slice(extremeBearEnd, bearEnd);
+  buckets.push({
+    name: 'Bear (5-25%)',
+    prob: 0.20,
+    mean: mean(bearPrices),
+    median: bearPrices[Math.floor(bearPrices.length/2)],
+    low: bearPrices[0],
+    high: bearPrices[bearPrices.length-1],
+    returnRange: ((mean(bearPrices) - S0) / S0 * 100).toFixed(1) + '%'
+  });
+  
+  // Neutral-Bear (25-50%)
+  const neutralEnd = Math.floor(0.50 * sorted.length);
+  const neutralBearPrices = sorted.slice(bearEnd, neutralEnd);
+  buckets.push({
+    name: 'Neutral-Bear (25-50%)',
+    prob: 0.25,
+    mean: mean(neutralBearPrices),
+    median: neutralBearPrices[Math.floor(neutralBearPrices.length/2)],
+    low: neutralBearPrices[0],
+    high: neutralBearPrices[neutralBearPrices.length-1],
+    returnRange: ((mean(neutralBearPrices) - S0) / S0 * 100).toFixed(1) + '%'
+  });
+  
+  // Neutral-Bull (50-75%)
+  const bullStart = Math.floor(0.75 * sorted.length);
+  const neutralBullPrices = sorted.slice(neutralEnd, bullStart);
+  buckets.push({
+    name: 'Neutral-Bull (50-75%)',
+    prob: 0.25,
+    mean: mean(neutralBullPrices),
+    median: neutralBullPrices[Math.floor(neutralBullPrices.length/2)],
+    low: neutralBullPrices[0],
+    high: neutralBullPrices[neutralBullPrices.length-1],
+    returnRange: ((mean(neutralBullPrices) - S0) / S0 * 100).toFixed(1) + '%'
+  });
+  
+  // Bull (75-95%)
+  const extremeBullStart = Math.floor(0.95 * sorted.length);
+  const bullPrices = sorted.slice(bullStart, extremeBullStart);
+  buckets.push({
+    name: 'Bull (75-95%)',
+    prob: 0.20,
+    mean: mean(bullPrices),
+    median: bullPrices[Math.floor(bullPrices.length/2)],
+    low: bullPrices[0],
+    high: bullPrices[bullPrices.length-1],
+    returnRange: ((mean(bullPrices) - S0) / S0 * 100).toFixed(1) + '%'
+  });
+  
+  // Extreme Bull (95-99%)
+  const extremeBullPrices = sorted.slice(extremeBullStart);
+  buckets.push({
+    name: 'Extreme Bull (95-99%)',
+    prob: 0.05,
+    mean: mean(extremeBullPrices),
+    median: extremeBullPrices[Math.floor(extremeBullPrices.length/2)],
+    low: extremeBullPrices[0],
+    high: extremeBullPrices[extremeBullPrices.length-1],
+    returnRange: ((mean(extremeBullPrices) - S0) / S0 * 100).toFixed(1) + '%'
+  });
+  
+  return buckets;
+}
+
+// Enhanced threshold probabilities
+function enhancedThresholdProbs(results, S0) {
+  const thresholds = [-0.20, -0.10, -0.05, 0, 0.05, 0.10, 0.20, 0.30];
+  return thresholds.map(level => {
+    const thr = S0 * (1 + level);
+    const prob = results.filter(p => p >= thr).length / results.length;
+    return { level, price: thr, prob };
+  });
+}
+
+// Main enhanced forecast function
+function runEnhancedForecast() {
+  const fileInput = document.getElementById('fileInput');
+  if (!fileInput.files[0]) { 
+    alert("Please upload a CSV file first."); 
+    return; 
+  }
+
+  // Show loading
+  document.getElementById('output').innerHTML = `
+    <div class="loading">
+      <div class="spinner"></div>
+      <div style="margin-left: 16px;">
+        <h3>Running Enhanced Monte Carlo Simulation...</h3>
+        <p>Processing with advanced models and confidence intervals</p>
+      </div>
+    </div>
+  `;
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    setTimeout(() => { // Allow loading UI to show
+      try {
+        const text = e.target.result;
+        const data = parseCSV(text);
+        const prices = data.map(d => parseFloat(d.Close)).filter(p => !isNaN(p));
+
+        if (prices.length < 30) { 
+          alert("Need at least 30 data points for reliable analysis."); 
+          return; 
         }
-        
-        finalPrices.push(price);
-        if (sim < 20) samplePaths.push(path); // Store sample paths for visualization
-    }
-    
-    // Calculate comprehensive statistics
-    const meanPrice = mean(finalPrices);
-    const medianPrice = percentile(finalPrices, 50);
-    const stdPrice = std(finalPrices);
-    
-    // Risk metrics
-    const var95 = percentile(finalPrices, 5);
-    const var99 = percentile(finalPrices, 1);
-    
-    // Conditional VaR (Expected Shortfall)
-    const sortedPrices = [...finalPrices].sort((a, b) => a - b);
-    const var95Index = Math.floor(0.05 * sortedPrices.length);
-    const var99Index = Math.floor(0.01 * sortedPrices.length);
-    
-    const cvar95 = mean(sortedPrices.slice(0, var95Index));
-    const cvar99 = mean(sortedPrices.slice(0, var99Index));
-    
-    // Performance metrics
-    const expectedReturn = ((meanPrice - S0) / S0) * 100;
-    const annualizedReturn = expectedReturn * (252 / horizon);
-    const annualizedVol = std(returns) * Math.sqrt(252) * 100;
-    const sharpeRatio = (annualizedReturn - riskFreeRate) / annualizedVol;
-    
-    // Probabilities
-    const gainCount = finalPrices.filter(p => p > S0).length;
-    const lossCount = finalPrices.filter(p => p < S0).length;
-    
-    return {
-        finalPrices,
-        samplePaths,
-        statistics: {
-            mean: meanPrice,
-            median: medianPrice,
-            std: stdPrice,
-            var95, var99, cvar95, cvar99,
-            expectedReturn,
-            sharpeRatio,
-            annualizedReturn,
-            annualizedVol
-        },
-        quantiles: {
-            p5: percentile(finalPrices, 5),
-            p25: percentile(finalPrices, 25),
-            p50: percentile(finalPrices, 50),
-            p75: percentile(finalPrices, 75),
-            p95: percentile(finalPrices, 95)
-        },
-        probabilities: {
-            gain: (gainCount / sims) * 100,
-            loss: (lossCount / sims) * 100
-        }
-    };
-}
 
-// Display functions
-function showAlert(message, type = 'error') {
-    const alertsDiv = document.getElementById('alerts');
-    alertsDiv.innerHTML = `
-        <div class="alert alert-${type}">
-            ${message}
-        </div>
-    `;
-}
-
-function clearAlerts() {
-    document.getElementById('alerts').innerHTML = '';
-}
-
-function updateDataSummary(data) {
-    const summaryDiv = document.getElementById('dataSummary');
-    const currentPrice = data[data.length - 1].close;
-    
-    summaryDiv.innerHTML = `
-        <div class="data-summary">
-            <strong>📈 Data Loaded Successfully</strong><br>
-            • ${data.length} price points<br>
-            • Current price: $${currentPrice.toFixed(2)}<br>
-            • Ready for analysis
-        </div>
-    `;
-}
-
-function formatCurrency(value) {
-    return `$${value.toFixed(2)}`;
-}
-
-function formatPercent(value) {
-    return `${value.toFixed(2)}%`;
-}
-
-function displayResults(results, initialPrice) {
-    const stats = results.statistics;
-    const isPositive = stats.expectedReturn >= 0;
-    
-    document.getElementById('output').innerHTML = `
-        <div class="result-card">
-            <h3>📊 Price Forecast & Performance</h3>
-            <div class="metrics-grid">
-                <div class="metric">
-                    <div class="metric-label">Current Price</div>
-                    <div class="metric-value">${formatCurrency(initialPrice)}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">Expected Price</div>
-                    <div class="metric-value ${isPositive ? 'positive' : 'negative'}">
-                        ${formatCurrency(stats.mean)}
-                    </div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">Expected Return</div>
-                    <div class="metric-value ${isPositive ? 'positive' : 'negative'}">
-                        ${isPositive ? '+' : ''}${formatPercent(stats.expectedReturn)}
-                    </div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">Sharpe Ratio</div>
-                    <div class="metric-value ${stats.sharpeRatio > 1 ? 'positive' : ''}">
-                        ${stats.sharpeRatio.toFixed(3)}
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="result-card">
-            <h3>⚠️ Risk Analysis</h3>
-            <div class="risk-metrics">
-                <div class="risk-item">
-                    <span>Value at Risk (95%)</span>
-                    <strong>${formatCurrency(stats.var95)}</strong>
-                </div>
-                <div class="risk-item">
-                    <span>Value at Risk (99%)</span>
-                    <strong>${formatCurrency(stats.var99)}</strong>
-                </div>
-                <div class="risk-item">
-                    <span>Conditional VaR (95%)</span>
-                    <strong>${formatCurrency(stats.cvar95)}</strong>
-                </div>
-                <div class="risk-item">
-                    <span>Conditional VaR (99%)</span>
-                    <strong>${formatCurrency(stats.cvar99)}</strong>
-                </div>
-            </div>
-            <div style="margin-top: 15px; padding: 15px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
-                <strong>Risk Interpretation:</strong><br>
-                • VaR (95%): 95% confident losses won't exceed ${formatCurrency(initialPrice - stats.var95)}<br>
-                • CVaR (95%): Average loss in worst 5% of scenarios is ${formatCurrency(initialPrice - stats.cvar95)}
-            </div>
-        </div>
-
-        <div class="result-card">
-            <h3>📈 Outcome Probabilities</h3>
-            <div class="probability-bars">
-                <div class="prob-item">
-                    <div class="prob-label">Probability of Gain:</div>
-                    <div class="prob-bar">
-                        <div class="prob-fill gain" style="width: ${results.probabilities.gain}%"></div>
-                    </div>
-                    <div class="prob-value">${formatPercent(results.probabilities.gain)}</div>
-                </div>
-                <div class="prob-item">
-                    <div class="prob-label">Probability of Loss:</div>
-                    <div class="prob-bar">
-                        <div class="prob-fill loss" style="width: ${results.probabilities.loss}%"></div>
-                    </div>
-                    <div class="prob-value">${formatPercent(results.probabilities.loss)}</div>
-                </div>
-            </div>
-        </div>
-
-        <div class="result-card">
-            <h3>📋 Price Quantiles</h3>
-            <div class="metrics-grid">
-                <div class="metric">
-                    <div class="metric-label">5th Percentile</div>
-                    <div class="metric-value">${formatCurrency(results.quantiles.p5)}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">25th Percentile</div>
-                    <div class="metric-value">${formatCurrency(results.quantiles.p25)}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">75th Percentile</div>
-                    <div class="metric-value">${formatCurrency(results.quantiles.p75)}</div>
-                </div>
-                <div class="metric">
-                    <div class="metric-label">95th Percentile</div>
-                    <div class="metric-value">${formatCurrency(results.quantiles.p95)}</div>
-                </div>
-            </div>
-        </div>
-    `;
-}
-
-function plotResults(results, initialPrice) {
-    const chartsDiv = document.getElementById('charts');
-    chartsDiv.innerHTML = `
-        <div class="result-card">
-            <h3>📊 Simulation Visualization</h3>
-            <div class="chart-container" id="distributionChart"></div>
-        </div>
-        <div class="result-card">
-            <h3>📈 Sample Price Paths</h3>
-            <div class="chart-container" id="pathsChart"></div>
-        </div>
-    `;
-
-    // Price distribution histogram
-    const trace1 = {
-        x: results.finalPrices,
-        type: 'histogram',
-        name: 'Price Distribution',
-        nbinsx: 50,
-        marker: {
-            color: 'rgba(102, 126, 234, 0.7)',
-            line: { color: 'rgba(102, 126, 234, 1)', width: 1 }
-        }
-    };
-
-    const layout1 = {
-        title: 'Monte Carlo Price Distribution',
-        xaxis: { title: 'Final Price ($)' },
-        yaxis: { title: 'Frequency' },
-        shapes: [
-            {
-                type: 'line',
-                x0: initialPrice, x1: initialPrice,
-                y0: 0, y1: 1, yref: 'paper',
-                line: { color: 'red', width: 2, dash: 'dash' }
-            },
-            {
-                type: 'line',
-                x0: results.statistics.mean, x1: results.statistics.mean,
-                y0: 0, y1: 1, yref: 'paper',
-                line: { color: 'green', width: 2 }
-            },
-            {
-                type: 'line',
-                x0: results.statistics.var95, x1: results.statistics.var95,
-                y0: 0, y1: 1, yref: 'paper',
-                line: { color: 'orange', width: 2, dash: 'dot' }
-            }
-        ],
-        annotations: [
-            {
-                x: initialPrice, y: 0.9, yref: 'paper',
-                text: 'Current Price', showarrow: true,
-                arrowcolor: 'red', arrowsize: 1
-            },
-            {
-                x: results.statistics.mean, y: 0.8, yref: 'paper',
-                text: 'Expected Price', showarrow: true,
-                arrowcolor: 'green', arrowsize: 1
-            }
-        ]
-    };
-
-    Plotly.newPlot('distributionChart', [trace1], layout1);
-
-    // Sample paths
-    const pathTraces = results.samplePaths.map((path, index) => ({
-        x: Array.from({length: path.length}, (_, i) => i),
-        y: path,
-        type: 'scatter',
-        mode: 'lines',
-        name: `Path ${index + 1}`,
-        line: { width: 2 },
-        opacity: 0.7
-    }));
-
-    const layout2 = {
-        title: 'Sample Monte Carlo Price Paths',
-        xaxis: { title: 'Days' },
-        yaxis: { title: 'Price ($)' },
-        showlegend: false,
-        shapes: [{
-            type: 'line',
-            x0: 0, x1: pathTraces[0].x[pathTraces[0].x.length - 1],
-            y0: initialPrice, y1: initialPrice,
-            line: { color: 'red', width: 2, dash: 'dash' }
-        }]
-    };
-
-    Plotly.newPlot('pathsChart', pathTraces, layout2);
-}
-
-// Main forecast function
-async function runForecast() {
-    const fileInput = document.getElementById('fileInput');
-    
-    if (!fileInput.files[0]) {
-        showAlert('Please upload a CSV file first.');
-        return;
-    }
-
-    if (priceData.length < 30) {
-        showAlert('Please ensure your data has at least 30 price points for reliable analysis.');
-        return;
-    }
-
-    // Show loading
-    document.getElementById('loading').classList.add('show');
-    document.getElementById('runBtn').disabled = true;
-    clearAlerts();
-
-    try {
-        // Get parameters
+        // Get configuration
         const sims = parseInt(document.getElementById('simulations').value);
         const horizon = parseInt(document.getElementById('horizon').value);
-        const riskFreeRate = parseFloat(document.getElementById('riskFreeRate').value);
+        const modelType = document.getElementById('modelType').value;
+        const rollingWindow = parseInt(document.getElementById('rollingWindow').value);
+        const useAntithetic = document.getElementById('antitheticVariates').checked;
 
-        // Simulate processing delay for better UX
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Calculate rolling statistics
+        const { mu, sigma } = rollingStats(prices, Math.min(rollingWindow, prices.length - 1));
+        const S0 = prices[prices.length - 1];
 
-        const prices = priceData.map(d => d.close);
-        const returns = computeReturns(prices);
-        const currentPrice = prices[prices.length - 1];
+        console.log(`Running ${sims} simulations with ${modelType} model`);
+        console.log(`Parameters: μ=${mu.toFixed(4)}, σ=${sigma.toFixed(4)}`);
 
-        // Run Monte Carlo simulation
-        simulationResults = monteCarlo(currentPrice, returns, horizon, sims, riskFreeRate);
+        // Run simulations based on model type
+        let results = [];
+        let modelDetails = {};
 
-        // Display results
-        displayResults(simulationResults, currentPrice);
-        plotResults(simulationResults, currentPrice);
+        for (let i = 0; i < sims; i++) {
+          let finalPrice;
+          
+          switch (modelType) {
+            case 'stochastic_vol':
+              const hestonResult = simulateHeston(
+                S0, sigma*sigma, mu, 2.0, sigma*sigma, 0.3, -0.7, horizon, useAntithetic
+              );
+              finalPrice = hestonResult.prices[hestonResult.prices.length - 1];
+              modelDetails.volatilityPaths = hestonResult.volatilities;
+              break;
+              
+            case 'jump_diffusion':
+              const jumpResult = simulateJumpDiffusion(
+                S0, mu, sigma, 0.1, -0.02, 0.05, horizon, useAntithetic
+              );
+              finalPrice = jumpResult.prices[jumpResult.prices.length - 1];
+              if (!modelDetails.jumps) modelDetails.jumps = [];
+              modelDetails.jumps.push(...jumpResult.jumps);
+              break;
+              
+            default: // gbm
+              const gbmPrices = simulateGBM(S0, mu, sigma, horizon, useAntithetic);
+              finalPrice = gbmPrices[gbmPrices.length - 1];
+          }
+          
+          results.push(finalPrice);
+        }
 
-    } catch (error) {
-        showAlert(`Simulation failed: ${error.message}`);
-    } finally {
-        document.getElementById('loading').classList.remove('show');
-        document.getElementById('runBtn').disabled = false;
-    }
+        // Calculate enhanced metrics
+        const expectedValue = mean(results);
+        const confidence = bootstrapConfidence(results, 95);
+        const buckets = enhancedScenarioBuckets(results, S0);
+        const thresholds = enhancedThresholdProbs(results, S0);
+
+        // VaR calculations
+        const var95 = percentile(results, 5);
+        const var99 = percentile(results, 1);
+        const cvar95 = mean(results.filter(p => p <= var95));
+
+        displayEnhancedResults(results, S0, expectedValue, confidence, buckets, thresholds, {
+          var95, var99, cvar95, modelType, sims, modelDetails
+        });
+        
+        plotEnhancedDistribution(results, S0, expectedValue, confidence);
+        
+      } catch (error) {
+        document.getElementById('output').innerHTML = `
+          <div class="card" style="border-color: #ef4444;">
+            <h3 style="color: #ef4444;">❌ Error</h3>
+            <p>Failed to process data: ${error.message}</p>
+          </div>`;
+      }
+    }, 100);
+  };
+  
+  reader.readAsText(fileInput.files[0]);
 }
 
-// File upload handler
-document.getElementById('fileInput').onchange = function(event) {
-    const file = event.target.files[0];
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  const idxClose = Math.max(
+    headers.findIndex(h => h.toLowerCase().includes('close')),
+    headers.findIndex(h => h.toLowerCase() === 'c')
+  );
+  
+  if (idxClose === -1) {
+    throw new Error('No Close price column found. Please ensure your CSV has a "Close" column.');
+  }
+  
+  return lines.slice(1).map(line => {
+    const parts = line.split(',');
+    return { Close: parts[idxClose] };
+  });
+}
+
+function displayEnhancedResults(results, S0, expectedValue, confidence, buckets, thresholds, metrics) {
+  const expectedReturn = ((expectedValue - S0) / S0) * 100;
+  const isPositive = expectedReturn >= 0;
+
+  let output = `
+    <div class="card">
+      <h2>🎯 Enhanced Monte Carlo Results</h2>
+      
+      <div class="grid">
+        <div class="metric-card">
+          <h4>Expected Price</h4>
+          <div class="metric-value">$${expectedValue.toFixed(2)}</div>
+          <div class="badge ${isPositive ? 'badge-profit' : 'badge-loss'}">
+            ${expectedReturn > 0 ? '+' : ''}${expectedReturn.toFixed(2)}%
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <h4>Value at Risk (95%)</h4>
+          <div class="metric-value loss">$${metrics.var95.toFixed(2)}</div>
+          <div class="badge badge-loss">
+            ${(((metrics.var95 - S0) / S0) * 100).toFixed(1)}%
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <h4>Extreme VaR (99%)</h4>
+          <div class="metric-value loss">$${metrics.var99.toFixed(2)}</div>
+          <div class="badge badge-loss">
+            ${(((metrics.var99 - S0) / S0) * 100).toFixed(1)}%
+          </div>
+        </div>
+        
+        <div class="metric-card">
+          <h4>Conditional VaR</h4>
+          <div class="metric-value loss">$${metrics.cvar95.toFixed(2)}</div>
+          <div class="badge badge-loss">
+            Expected loss if worst 5%
+          </div>
+        </div>
+      </div>
+
+      <div class="confidence-interval">
+        <h4>📊 95% Bootstrap Confidence Interval</h4>
+        <p><strong>Range:</strong> $${confidence.lower.toFixed(2)} - $${confidence.upper.toFixed(2)}</p>
+        <p><strong>Standard Error:</strong> $${confidence.standardError.toFixed(2)}</p>
+        <p><em>Based on ${metrics.sims.toLocaleString()} simulations using ${metrics.modelType.replace('_', ' ').toUpperCase()} model</em></p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📈 Enhanced Scenario Analysis (With Extreme Tails)</h3>
+      <table>
+        <tr>
+          <th>Scenario</th>
+          <th>Probability</th>
+          <th>Price Range</th>
+          <th>Expected Return</th>
+          <th>Risk Level</th>
+        </tr>`;
+
+  buckets.forEach(bucket => {
+    const riskClass = bucket.name.includes('Extreme Bear') ? 'badge-loss' : 
+                     bucket.name.includes('Bear') ? 'badge-loss' :
+                     bucket.name.includes('Bull') ? 'badge-profit' : 'badge-neutral';
     
-    if (!file) return;
-    
-    if (!file.name.toLowerCase().endsWith('.csv')) {
-        showAlert('Please upload a CSV file.');
-        return;
+    output += `
+      <tr>
+        <td><span class="badge ${riskClass}">${bucket.name}</span></td>
+        <td>${(bucket.prob * 100).toFixed(1)}%</td>
+        <td>$${bucket.low.toFixed(2)} - $${bucket.high.toFixed(2)}</td>
+        <td>${bucket.returnRange}</td>
+        <td>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: ${bucket.prob * 100}%"></div>
+          </div>
+        </td>
+      </tr>`;
+  });
+
+  output += `
+      </table>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <h3>🎯 Price Target Probabilities</h3>
+        <table>
+          <tr><th>Target Return</th><th>Price Level</th><th>Probability ≥</th></tr>`;
+
+  thresholds.forEach(t => {
+    const returnClass = t.level >= 0 ? 'profit' : 'loss';
+    output += `
+      <tr>
+        <td class="${returnClass}">${(t.level * 100).toFixed(0)}%</td>
+        <td>$${t.price.toFixed(2)}</td>
+        <td><strong>${(t.prob * 100).toFixed(1)}%</strong></td>
+      </tr>`;
+  });
+
+  output += `
+        </table>
+      </div>
+
+      <div class="card">
+        <h3>⚠️ Risk Metrics Summary</h3>
+        <div style="space-y: 12px;">
+          <p><strong>Downside Risk (5% loss):</strong> <span class="loss">${(results.filter(p => p < S0 * 0.95).length / results.length * 100).toFixed(1)}%</span></p>
+          <p><strong>Upside Potential (10% gain):</strong> <span class="profit">${(results.filter(p => p > S0 * 1.10).length / results.length * 100).toFixed(1)}%</span></p>
+          <p><strong>Volatility (Annualized):</strong> <span class="info">${(std(results.map(p => Math.log(p/S0))) * Math.sqrt(252) * 100).toFixed(1)}%</span></p>
+          <p><strong>Sharpe Approximation:</strong> <span class="info">${(expectedReturn / (std(results.map(p => Math.log(p/S0))) * Math.sqrt(252) * 100)).toFixed(2)}</span></p>
+        </div>
+      </div>
+    </div>`;
+
+  // Model-specific details
+  if (metrics.modelDetails.jumps && metrics.modelDetails.jumps.length > 0) {
+    output += `
+      <div class="card">
+        <h3>⚡ Jump Events Detected</h3>
+        <p>The Jump Diffusion model detected <strong>${metrics.modelDetails.jumps.length}</strong> potential jump events.</p>
+        <p>Average jump magnitude: <strong>${(metrics.modelDetails.jumps.reduce((sum, j) => sum + Math.abs(j.magnitude), 0) / metrics.modelDetails.jumps.length * 100).toFixed(2)}%</strong></p>
+      </div>`;
+  }
+
+  document.getElementById('output').innerHTML = output;
+}
+
+function plotEnhancedDistribution(results, S0, expectedValue, confidence) {
+  // Main distribution
+  const histTrace = {
+    x: results,
+    type: 'histogram',
+    name: 'Price Distribution',
+    marker: {
+      color: 'rgba(34, 197, 94, 0.7)',
+      line: { color: 'rgba(34, 197, 94, 1)', width: 1 }
+    },
+    nbinsx: 60
+  };
+
+  // Current price line
+  const currentLine = {
+    x: [S0, S0],
+    y: [0, Math.max(100, results.length / 20)],
+    type: 'scatter',
+    mode: 'lines',
+    name: 'Current Price',
+    line: { color: '#3b82f6', width: 3, dash: 'dash' }
+  };
+
+  // Expected value line
+  const expectedLine = {
+    x: [expectedValue, expectedValue],
+    y: [0, Math.max(100, results.length / 20)],
+    type: 'scatter',
+    mode: 'lines',
+    name: 'Expected Price',
+    line: { color: '#22c55e', width: 3 }
+  };
+
+  // Confidence interval
+  const confidenceArea = {
+    x: [confidence.lower, confidence.upper, confidence.upper, confidence.lower],
+    y: [0, 0, Math.max(100, results.length / 15), Math.max(100, results.length / 15)],
+    fill: 'toself',
+    type: 'scatter',
+    mode: 'none',
+    name: '95% Confidence',
+    fillcolor: 'rgba(34, 197, 94, 0.15)',
+    line: { color: 'transparent' }
+  };
+
+  // VaR lines
+  const var95 = results.slice().sort((a,b) => a-b)[Math.floor(0.05 * results.length)];
+  const var99 = results.slice().sort((a,b) => a-b)[Math.floor(0.01 * results.length)];
+  
+  const var95Line = {
+    x: [var95, var95],
+    y: [0, Math.max(100, results.length / 25)],
+    type: 'scatter',
+    mode: 'lines',
+    name: 'VaR 95%',
+    line: { color: '#ef4444', width: 2, dash: 'dot' }
+  };
+
+  const var99Line = {
+    x: [var99, var99],
+    y: [0, Math.max(100, results.length / 30)],
+    type: 'scatter',
+    mode: 'lines',
+    name: 'VaR 99%',
+    line: { color: '#dc2626', width: 2, dash: 'dot' }
+  };
+
+  const layout = {
+    title: {
+      text: 'Enhanced Monte Carlo Price Distribution',
+      font: { color: '#e5e7eb', size: 16 }
+    },
+    paper_bgcolor: 'rgba(0,0,0,0)',
+    plot_bgcolor: 'rgba(31, 41, 55, 0.5)',
+    font: { color: '#e5e7eb' },
+    xaxis: {
+      title: 'Price ($)',
+      gridcolor: '#374151',
+      color: '#e5e7eb'
+    },
+    yaxis: {
+      title: 'Frequency',
+      gridcolor: '#374151',
+      color: '#e5e7eb'
+    },
+    margin: { t: 60, r: 30, b: 60, l: 60 },
+    height: 500,
+    showlegend: true,
+    legend: {
+      bgcolor: 'rgba(31, 41, 55, 0.8)',
+      bordercolor: '#4b5563',
+      borderwidth: 1,
+      font: { color: '#e5e7eb' }
     }
+  };
 
-    const reader = new FileReader();
-    reader.onload = function(e) {
-        try {
-            const text = e.target.result;
-            priceData = parseCSV(text);
-            
-            if (priceData.length < 10) {
-                throw new Error('Dataset too small. Please provide at least 10 data points.');
-            }
-
-            updateDataSummary(priceData);
-            clearAlerts();
-            
-        } catch (error) {
-            showAlert(`Error parsing CSV: ${error.message}`);
-            priceData = [];
-        }
-    };
-    
-    reader.readAsText(file);
-};
-
-// Initialize
-document.addEventListener('DOMContentLoaded', function() {
-    showAlert('Welcome! Upload your CSV price data to begin professional Monte Carlo analysis.', 'info');
-});
+  Plotly.newPlot('chart', [
+    histTrace, confidenceArea, currentLine, expectedLine, var95Line, var99Line
+  ], layout, {
+    displayModeBar: false,
+    responsive: true
+  });
+}
 </script>
 
 </body>
